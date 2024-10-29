@@ -1,0 +1,24 @@
+# Interface graphique
+kivy>=2.2.0
+kivymd>=1.1.1
+
+# Traitement des fichiers
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+PyPDF2>=3.0.0
+pdfminer.six>=20221105
+
+# Audio
+pydub>=0.25.1
+ffmpeg-python>=0.2.0
+
+# Utilitaires
+pillow>=9.0.0
+python-magic>=0.4.27
+
+# Pour le développement Android
+pyjnius>=1.5.0
+android>=1.0.0
+
+# Pour le mode développement
+watchdog>=3.0.0

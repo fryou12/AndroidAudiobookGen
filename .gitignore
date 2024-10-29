@@ -5,6 +5,27 @@ build/
 # Local configuration file (sdk path, etc)
 local.properties
 
+#glossaire de ligne de commande
+cmd
+
+# Python cache
+__pycache__/
+
+# MacOS
+.DS_Store
+
+# Virtual environment
+AndroDev.venv/
+
+# Exported files
+Export
+
+# Buildozer configuration file
+buildozer.spec
+
+# Livres
+*.epub
+
 # Log/OS Files
 *.log
 
