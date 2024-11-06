@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ePub to Audio</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            min-width: 320px;
+        }
+        
+        .drawer {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            bottom: 0;
+            width: 300px;
+            background: white;
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .drawer.open {
+            transform: translateX(300px);
+        }
+        
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 999;
+        }
+        
+        .drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Ajout des styles pour les thèmes */
+        body.theme-normal { background: white; color: black; }
+        body.theme-night { background: #1a1a1a; color: white; }
+        body.theme-sepia { background: #f1e7d0; color: #433422; }
+        body.theme-blue { background: #e8f4f8; color: #2c5282; }
+        body.theme-green { background: #e8f8e8; color: #276749; }
+
+        /* Styles spécifiques pour le mode nuit */
+        body.theme-night .bg-white { background-color: #1a1a1a; }
+        body.theme-night .bg-gray-100 { background-color: #2d2d2d; }
+        body.theme-night .text-gray-600 { color: #a0a0a0; }
+        body.theme-night .border { border-color: #404040; }
+        body.theme-night .drawer { background: #1a1a1a; }
+        body.theme-night select { 
+            background-color: #2d2d2d; 
+            color: white;
+            border-color: #404040;
+        }
+        body.theme-night button.bg-black {
+            background-color: white;
+            color: black;
+        }
+        body.theme-night button.bg-gray-200 {
+            background-color: #404040;
+            color: white;
+        }
+
+        /* Theme Sepia */
+        body.theme-sepia .bg-white { background-color: #f1e7d0; }
+        body.theme-sepia .bg-gray-100 { background-color: #e6d7b8; }
+        body.theme-sepia .text-gray-600 { color: #7a6855; }
+        body.theme-sepia .border { border-color: #d3c4a8; }
+        body.theme-sepia .drawer { background: #f1e7d0; }
+        body.theme-sepia select { 
+            background-color: #fff7e6;
+            border-color: #d3c4a8;
+        }
+        body.theme-sepia button.bg-black {
+            background-color: #433422;
+            color: #f1e7d0;
+        }
+        body.theme-sepia button.bg-gray-200 {
+            background-color: #e6d7b8;
+            color: #433422;
+        }
+
+        /* Theme Blue */
+        body.theme-blue .bg-white { background-color: #e8f4f8; }
+        body.theme-blue .bg-gray-100 { background-color: #d9ebf3; }
+        body.theme-blue .text-gray-600 { color: #4a7294; }
+        body.theme-blue .border { border-color: #b8d9e6; }
+        body.theme-blue .drawer { background: #e8f4f8; }
+        body.theme-blue select { 
+            background-color: #f0f9ff;
+            border-color: #b8d9e6;
+        }
+        body.theme-blue button.bg-black {
+            background-color: #2c5282;
+            color: #e8f4f8;
+        }
+        body.theme-blue button.bg-gray-200 {
+            background-color: #d9ebf3;
+            color: #2c5282;
+        }
+
+        /* Theme Green */
+        body.theme-green .bg-white { background-color: #e8f8e8; }
+        body.theme-green .bg-gray-100 { background-color: #d9f3d9; }
+        body.theme-green .text-gray-600 { color: #48945c; }
+        body.theme-green .border { border-color: #b8e6b8; }
+        body.theme-green .drawer { background: #e8f8e8; }
+        body.theme-green select { 
+            background-color: #f0fff0;
+            border-color: #b8e6b8;
+        }
+        body.theme-green button.bg-black {
+            background-color: #276749;
+            color: #e8f8e8;
+        }
+        body.theme-green button.bg-gray-200 {
+            background-color: #d9f3d9;
+            color: #276749;
+        }
+
+        /* Styles responsives */
+        @media (max-width: 640px) {
+            .max-w-2xl {
+                max-width: 100%;
+                padding: 0 1rem;
+            }
+            
+            .drawer {
+                width: 85%;
+                left: -85%;
+            }
+            
+            .drawer.open {
+                transform: translateX(100%);
+            }
+        }
+
+        /* Modification des styles des thèmes pour le cadre en pointillé */
+        /* Theme Normal */
+        body.theme-normal .border-dashed {
+            border-color: #f3f4f6; /* Couleur du header en mode normal */
+        }
+
+        /* Theme Night */
+        body.theme-night .border-dashed {
+            border-color: #2d2d2d; /* Couleur du header en mode nuit */
+        }
+
+        /* Theme Sepia */
+        body.theme-sepia .border-dashed {
+            border-color: #e6d7b8; /* Couleur du header en mode sépia */
+        }
+
+        /* Theme Blue */
+        body.theme-blue .border-dashed {
+            border-color: #d9ebf3; /* Couleur du header en mode bleu */
+        }
+
+        /* Theme Green */
+        body.theme-green .border-dashed {
+            border-color: #d9f3d9; /* Couleur du header en mode vert */
+        }
+
+        /* Amélioration des styles responsives */
+        @media (max-width: 1024px) {
+            .max-w-2xl {
+                max-width: 100%;
+                margin: 0 auto;
+                padding: 0 1rem;
+            }
+        }
+
+        /* Ajustement de la taille minimale et maximale de la fenêtre */
+        .main-container {
+            min-width: 320px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Ajustement du conteneur principal */
+        .content-wrapper {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Ajustement du cadre en pointillé */
+        .dashed-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            position: relative;
+            margin: 1rem 0;
+        }
+
+        /* Modification des styles pour le conteneur de chapitres */
+        .chapters-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Ajustement du scroll area */
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        /* Ajout des styles pour les boutons */
+        .file-select-button {
+            width: 140px;  /* Largeur fixe */
+            height: 32px;  /* Hauteur fixe */
+            flex-shrink: 0;  /* Empêche le rétrécissement */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;  /* Empêche le retour à la ligne du texte */
+            font-size: 0.875rem;
+            line-height: 1;
+            padding: 0 0.75rem;
+        }
+
+        /* Style pour les boutons d'action (Analyser et Convertir) */
+        .action-button {
+            height: 32px;  /* Hauteur fixe */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            padding: 0 1rem;
+            font-size: 0.875rem;
+            line-height: 1;
+        }
+
+        /* Ajustement du conteneur de sélection */
+        .selection-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: nowrap;  /* Empêche le retour à la ligne */
+        }
+
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow: hidden;  /* Cache le débordement du texte */
+        }
+
+        .status-icon {
+            flex-shrink: 0;  /* Empêche l'icône de se réduire */
+            width: 20px;     /* Largeur fixe */
+            height: 20px;    /* Hauteur fixe */
+        }
+
+        .file-name {
+            font-size: 0.75rem;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .progress-counter {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            font-weight: bold;
+            z-index: 100;  /* S'assure que le compteur est au-dessus des autres éléments */
+        }
+
+        /* Ajoutons un style pour le header */
+        header {
+            position: relative;  /* Nécessaire pour le positionnement absolu du compteur */
+        }
+    </style>
+</head>
+<body class="theme-normal">
+    <!-- Overlay du tiroir -->
+    <div id="drawerOverlay" class="drawer-overlay" onclick="toggleDrawer()"></div>
+
+    <!-- Tiroir latéral -->
+    <div id="drawer" class="drawer">
+        <div class="flex flex-col h-full">
+            <div class="p-4 border-b">
+                <h2 class="text-xl font-semibold">Paramètres</h2>
+            </div>
+            
+            <div class="flex-1 p-4 space-y-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium">Service TTS</label>
+                    <select class="w-full p-2 border rounded-md" onchange="changeTTSService(this.value)" id="ttsService">
+                        <option value="">Choisir un service TTS</option>
+                        <option value="edge">Microsoft Edge</option>
+                        <option value="google">Natif Google TTS</option>
+                        <option value="microsoft">Microsoft Azure</option>
+                        <option value="amazon">Amazon Polly</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                
+                <div class="space-y-2" id="voiceSelector" style="display: none;">
+                    <label class="block text-sm font-medium">Voix</label>
+                    <select class="w-full p-2 border rounded-md" id="ttsVoice">
+                        <option value="">Choisir une voix</option>
+                    </select>
+                </div>
+
+                <button onclick="testVoice()" class="w-full flex items-center justify-center px-4 py-2 bg-black text-white rounded-md hover:bg-black/90">
+                    <i data-lucide="volume-2" class="w-4 h-4 mr-2"></i>
+                    Tester la voix
+                </button>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium">Style de l'application</label>
+                    <select class="w-full p-2 border rounded-md" onchange="changeTheme(this.value)">
+                        <option value="normal">Normal</option>
+                        <option value="night">Mode nuit</option>
+                        <option value="sepia">Sépia</option>
+                        <option value="blue">Bleu clair</option>
+                        <option value="green">Vert clair</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="p-4 border-t">
+                <p class="text-sm text-center text-gray-500">Version 0.1.10</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col h-screen">
+        <header class="border-b flex-none bg-gray-100">
+            <div class="flex items-center h-14 px-4">
+                <button onclick="toggleDrawer()" class="mr-2 hover:bg-gray-200 p-2 rounded-lg">
+                    <i data-lucide="menu" class="h-5 w-5"></i>
+                </button>
+                <div class="flex items-center">
+                    <i data-lucide="book" class="h-6 w-6 mr-2"></i>
+                    <span class="font-semibold">ePub to Audio</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-hidden">
+            <div class="content-wrapper">
+                <div class="dashed-container border-2 border-dashed rounded-lg p-4 space-y-4">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Sélectionner un fichier ePub/PDF</label>
+                            <div class="selection-container mt-1.5">
+                                <button onclick="selectFile()" class="file-select-button bg-black text-white rounded-md hover:bg-black/90">
+                                    <i data-lucide="folder-open" class="mr-2 h-4 w-4"></i>
+                                    Choisir un fichier
+                                </button>
+                                <div class="status-container">
+                                    <i id="fileIcon" data-lucide="x" class="status-icon text-red-500"></i>
+                                    <span id="selectedFile" class="file-name hidden"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Sélectionner un dossier d'export</label>
+                            <div class="selection-container mt-1.5">
+                                <button onclick="selectFolder()" class="file-select-button bg-black text-white rounded-md hover:bg-black/90">
+                                    <i data-lucide="folder-open" class="mr-2 h-4 w-4"></i>
+                                    Choisir un dossier
+                                </button>
+                                <div class="status-container">
+                                    <i id="folderIcon" data-lucide="x" class="status-icon text-red-500"></i>
+                                    <span id="selectedFolder" class="file-name hidden"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="analyzeFile()" class="action-button bg-black text-white rounded-md hover:bg-black/90">
+                                Analyser
+                            </button>
+                            <button onclick="convertToAudio()" class="action-button bg-gray-200 text-black rounded-md hover:bg-gray-300">
+                                Convertir
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="chapters-container">
+                        <h3 class="font-medium mb-2">Chapitres extraits</h3>
+                        <div class="scroll-area border rounded-md" id="chaptersContainer">
+                            <!-- Les chapitres seront insérés ici -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentFilePath = null;
+        let currentFolderPath = null;
+
+        // Ajouter cette fonction utilitaire
+        function truncateFileName(fileName, maxLength = 40) {
+            if (fileName.length <= maxLength) return fileName;
+            
+            const extension = fileName.split('.').pop();
+            const nameWithoutExt = fileName.slice(0, -(extension.length + 1));
+            
+            const truncatedLength = maxLength - extension.length - 4; // -4 pour "..." et "."
+            const start = nameWithoutExt.slice(0, truncatedLength);
+            
+            return `${start}...${extension}`;
+        }
+
+        // Fonction pour sélectionner un fichier
+        async function selectFile() {
+            try {
+                const result = await window.pywebview.api.select_file();
+                if (result.status === 'success') {
+                    currentFilePath = result.path;
+                    const truncatedName = truncateFileName(result.name);
+                    const fileIcon = document.getElementById('fileIcon');
+                    const selectedFile = document.getElementById('selectedFile');
+                    
+                    // Changer l'icône en coche verte
+                    fileIcon.setAttribute('data-lucide', 'check');
+                    fileIcon.classList.remove('text-red-500');
+                    fileIcon.classList.add('text-green-500');
+                    
+                    // Afficher le nom du fichier
+                    selectedFile.textContent = truncatedName;
+                    selectedFile.title = result.name;
+                    selectedFile.classList.remove('hidden');
+                    
+                    // Rafraîchir les icônes
+                    lucide.createIcons();
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError('Erreur lors de la sélection du fichier');
+            }
+        }
+
+        // Fonction pour sélectionner un dossier
+        async function selectFolder() {
+            try {
+                const result = await window.pywebview.api.select_folder();
+                if (result.status === 'success') {
+                    currentFolderPath = result.path;
+                    const truncatedName = truncateFileName(result.name);
+                    const folderIcon = document.getElementById('folderIcon');
+                    const selectedFolder = document.getElementById('selectedFolder');
+                    
+                    // Changer l'icône en coche verte
+                    folderIcon.setAttribute('data-lucide', 'check');
+                    folderIcon.classList.remove('text-red-500');
+                    folderIcon.classList.add('text-green-500');
+                    
+                    // Afficher le nom du dossier
+                    selectedFolder.textContent = truncatedName;
+                    selectedFolder.title = result.name;
+                    selectedFolder.classList.remove('hidden');
+                    
+                    // Rafraîchir les icônes
+                    lucide.createIcons();
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError('Erreur lors de la sélection du dossier');
+            }
+        }
+
+        // Fonction pour analyser le fichier
+        async function analyzeFile() {
+            if (!currentFilePath) {
+                showError('Veuillez sélectionner un fichier à analyser');
+                return;
+            }
+
+            try {
+                const result = await window.pywebview.api.analyze_file(currentFilePath);
+                if (result.status === 'success') {
+                    updateChaptersUI(result.chapters);
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError('Erreur lors de l\'analyse du fichier');
+            }
+        }
+
+        // Fonction pour mettre à jour l'interface avec les chapitres
+        function updateChaptersUI(chapters) {
+            const container = document.getElementById('chaptersContainer');
+            if (!chapters || chapters.length === 0) {
+                container.innerHTML = '<div class="p-4 text-gray-500">Aucun chapitre trouvé</div>';
+                return;
+            }
+
+            container.innerHTML = chapters.map((chapter, index) => `
+                <div class="flex items-center justify-between p-3 hover:bg-gray-50 border-b last:border-b-0">
+                    <span class="text-sm">${chapter.title || `Chapitre ${index + 1}`}</span>
+                    <span class="text-sm text-gray-500">${chapter.content ? chapter.content.split(' ').length : 0} mots</span>
+                </div>
+            `).join('');
+        }
+
+        // Fonction pour afficher les erreurs
+        function showError(message) {
+            console.error('Erreur:', message);
+            // Vous pouvez implémenter une meilleure UI pour les erreurs
+            alert(message);
+        }
+
+        // Code JavaScript existant...
+
+        // Ajouter la fonction pour le tiroir
+        function toggleDrawer() {
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('drawerOverlay');
+            drawer.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        // Initialiser les icônes Lucide
+        lucide.createIcons();
+
+        // Fonction pour changer le thème
+        function changeTheme(theme) {
+            const body = document.body;
+            // Retirer toutes les classes de thème
+            body.classList.remove('theme-normal', 'theme-night', 'theme-sepia', 'theme-blue', 'theme-green');
+            // Ajouter la nouvelle classe de thème
+            body.classList.add(`theme-${theme}`);
+            
+            // Sauvegarder le thème dans le localStorage
+            localStorage.setItem('theme', theme);
+        }
+
+        // Charger le thème sauvegardé au démarrage
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'normal';
+            const themeSelect = document.querySelector('select[onchange="changeTheme(this.value)"]');
+            if (themeSelect) {
+                themeSelect.value = savedTheme;
+            }
+            changeTheme(savedTheme);
+        });
+
+        // Dans la section script, modifions le mapping des voix
+        const edgeVoices = {
+            'fr-FR-RemyNeural': 'Rémy Multilingue',
+            'fr-FR-VivienneNeural': 'Vivienne Multilingue',
+            'fr-FR-HenriNeural': 'Henri',
+            'fr-FR-DeniseNeural': 'Denise',
+            'fr-FR-EloiseNeural': 'Héloïse'
+        };
+
+        // Fonction pour changer le service TTS
+        async function changeTTSService(service) {
+            const voiceSelector = document.getElementById('voiceSelector');
+            const voiceSelect = document.getElementById('ttsVoice');
+            
+            // Vider les options actuelles
+            voiceSelect.innerHTML = '<option value="">Choisir une voix</option>';
+            
+            if (service === 'edge') {
+                // Afficher le sélecteur de voix
+                voiceSelector.style.display = 'block';
+                
+                // Ajouter les voix Edge TTS
+                for (const [id, name] of Object.entries(edgeVoices)) {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = name;
+                    voiceSelect.appendChild(option);
+                }
+            } else if (service === 'google') {
+                // Afficher le sélecteur de voix
+                voiceSelector.style.display = 'block';
+                
+                try {
+                    // Récupérer les voix Android
+                    const result = await window.pywebview.api.get_android_tts_voices();
+                    if (result && result.length > 0) {
+                        result.forEach(voice => {
+                            const option = document.createElement('option');
+                            option.value = voice.id;
+                            option.textContent = voice.name;
+                            voiceSelect.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = 'default';
+                        option.textContent = 'Voix par défaut';
+                        voiceSelect.appendChild(option);
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la récupération des voix Android:', error);
+                }
+            } else {
+                // Cacher le sélecteur de voix pour les autres services
+                voiceSelector.style.display = 'none';
+            }
+            
+            // Sauvegarder le choix
+            localStorage.setItem('tts_service', service);
+        }
+
+        // Fonction pour tester la voix
+        async function testVoice() {
+            const service = document.getElementById('ttsService').value;
+            const voice = document.getElementById('ttsVoice').value;
+            
+            if (!service) {
+                showError('Veuillez sélectionner un service TTS');
+                return;
+            }
+            
+            if (service === 'edge' && !voice) {
+                showError('Veuillez sélectionner une voix');
+                return;
+            }
+            
+            try {
+                const result = await window.pywebview.api.test_voice(service, voice);
+                if (result.status !== 'success') {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError('Erreur lors du test de la voix');
+            }
+        }
+
+        // Au chargement de la page, sélectionner automatiquement Google TTS sur Android
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkRequiredElements()) {
+                console.error('Certains éléments requis sont manquants');
+                return;
+            }
+
+            // Initialiser les icônes
+            lucide.createIcons();
+
+            // Restaurer le thème
+            const savedTheme = localStorage.getItem('theme') || 'normal';
+            const themeSelect = document.querySelector('select[onchange="changeTheme(this.value)"]');
+            if (themeSelect) {
+                themeSelect.value = savedTheme;
+                changeTheme(savedTheme);
+            }
+
+            // Vérifier si on est sur Android
+            try {
+                const isAndroid = await window.pywebview.api.is_android;
+                if (isAndroid) {
+                    const ttsSelect = document.getElementById('ttsService');
+                    if (ttsSelect) {
+                        ttsSelect.value = 'google';
+                        await changeTTSService('google');
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification de la plateforme:', error);
+            }
+        });
+
+        // Reste du code JavaScript...
+
+        async function convertToAudio() {
+            if (!currentFilePath) {
+                showError('Veuillez sélectionner un fichier à convertir');
+                return;
+            }
+            if (!currentFolderPath) {
+                showError('Veuillez sélectionner un dossier d\'export');
+                return;
+            }
+
+            const service = document.getElementById('ttsService').value;
+            if (!service) {
+                showError('Veuillez sélectionner un service TTS');
+                return;
+            }
+
+            const voice = document.getElementById('ttsVoice').value;
+            if (service === 'edge' && !voice) {
+                showError('Veuillez sélectionner une voix');
+                return;
+            }
+
+            // Vérifier si le conteneur de chapitres est vide
+            const chaptersContainer = document.getElementById('chaptersContainer');
+            if (!chaptersContainer.children.length) {
+                // Si aucun chapitre n'est affiché, lancer l'analyse
+                try {
+                    const analysisResult = await window.pywebview.api.analyze_file(currentFilePath);
+                    if (analysisResult.status !== 'success') {
+                        showError('Erreur lors de l\'analyse du fichier');
+                        return;
+                    }
+                    updateChaptersUI(analysisResult.chapters);
+                } catch (error) {
+                    showError('Erreur lors de l\'analyse du fichier');
+                    return;
+                }
+            }
+
+            try {
+                // Créer l'élément de progression s'il n'existe pas déjà
+                createProgressElement();
+                progressElement.textContent = '0%';
+                progressElement.style.display = 'block';
+
+                const result = await window.pywebview.api.convert_to_audio({
+                    file_path: currentFilePath,
+                    output_folder: currentFolderPath,
+                    service: service,
+                    voice: voice,
+                    format: 'mp3'
+                });
+
+                if (result.status === 'success') {
+                    alert(result.message);
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError('Erreur lors de la conversion');
+            }
+        }
+
+        // Ajouter la gestion de la progression
+        let progressElement = null;
+
+        function createProgressElement() {
+            if (!progressElement) {
+                progressElement = document.createElement('div');
+                progressElement.className = 'progress-counter';
+                // Sélectionner spécifiquement le header
+                const header = document.querySelector('header');
+                if (header) {
+                    header.style.position = 'relative';  // Assure que le positionnement absolu fonctionne
+                    header.appendChild(progressElement);
+                }
+            }
+        }
+
+        // Écouteur pour la progression
+        window.addEventListener('conversionProgress', function(e) {
+            createProgressElement();
+            const progress = e.detail;
+            progressElement.textContent = `${progress}%`;
+            
+            if (progress === 100) {
+                setTimeout(() => {
+                    progressElement.style.display = 'none';
+                }, 2000);
+            } else {
+                progressElement.style.display = 'block';
+            }
+        });
+
+        // Ajouter une fonction de vérification des éléments DOM
+        function checkRequiredElements() {
+            const requiredElements = [
+                'ttsService',
+                'ttsVoice',
+                'fileIcon',
+                'selectedFile',
+                'folderIcon',
+                'selectedFolder',
+                'chaptersContainer'
+            ];
+            
+            const missingElements = requiredElements.filter(id => !document.getElementById(id));
+            if (missingElements.length > 0) {
+                console.error('Éléments manquants:', missingElements);
+                return false;
+            }
+            return true;
+        }
+    </script>
+</body>
+</html> 
+</html> 
