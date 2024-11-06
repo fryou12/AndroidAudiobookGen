@@ -1,54 +1,55 @@
-# Gradle files
-.gradle/
-build/
-
-# Local configuration file (sdk path, etc)
-local.properties
-
-#glossaire de ligne de commande
-cmd
-
-# Python cache
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# MacOS
-.DS_Store
+# Kivy
+*.kv~
+.kivy/
 
-# Virtual environment
-AndroDev.venv/
+# Buildozer
+.buildozer/
+bin/
 
-# Exported files
-Export
+# Environnement virtuel
+venv/
+ENV/
 
-# Buildozer configuration file
-buildozer.spec
-
-# Livres
-*.epub
-
-# Log/OS Files
-*.log
-
-# Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
-*.apk
-output.json
-
-# IntelliJ
-*.iml
+# IDE
 .idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
+.vscode/
+*.swp
+*.swo
 
-# Keystore files
-*.jks
-*.keystore
+# Système d'exploitation
+.DS_Store
+Thumbs.db
 
-# Google Services (e.g. APIs or Firebase)
-google-services.json
+# Fichiers spécifiques au projet
+_pycache__/
+TTSenv/
+*.spec
+*.bat
+*.sh
+*.tsx
 
-# Android Profiling
-*.hprof
+# Logs et bases de données
+*.log
+*.sqlite3 
