@@ -29,6 +29,7 @@ wheels/
 bin/
 
 # Environnement virtuel
+TTSenv/
 venv/
 ENV/
 Dockerfile
@@ -38,6 +39,10 @@ Dockerfile
 .vscode/
 *.swp
 *.swo
+
+#dossiers non nécessaires
+kotlin & java/
+old/
 
 # Système d'exploitation
 .DS_Store
