@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ePub to Audio</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>ePub to Audio v2</title>
+    <script src="https://unpkg.com/@lucide/web@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             margin: 0;
             padding: 0;
             height: 100vh;
-            min-width: 320px;
+            min-width: 160px;
         }
-        
         .drawer {
             position: fixed;
             left: -300px;
@@ -25,11 +24,9 @@
             z-index: 1000;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
-        
         .drawer.open {
             transform: translateX(300px);
         }
-        
         .drawer-overlay {
             position: fixed;
             inset: 0;
@@ -39,19 +36,17 @@
             transition: opacity 0.3s ease-in-out;
             z-index: 999;
         }
-        
         .drawer-overlay.open {
             opacity: 1;
             pointer-events: auto;
         }
-
         /* Ajout des styles pour les thèmes */
         body.theme-normal { background: white; color: black; }
         body.theme-night { background: #1a1a1a; color: white; }
         body.theme-sepia { background: #f1e7d0; color: #433422; }
         body.theme-blue { background: #e8f4f8; color: #2c5282; }
         body.theme-green { background: #e8f8e8; color: #276749; }
-
+        body.theme-red { background: #f8e8e8; color: #742a2a; }
         /* Styles spécifiques pour le mode nuit */
         body.theme-night .bg-white { background-color: #1a1a1a; }
         body.theme-night .bg-gray-100 { background-color: #2d2d2d; }
@@ -71,7 +66,6 @@
             background-color: #404040;
             color: white;
         }
-
         /* Theme Sepia */
         body.theme-sepia .bg-white { background-color: #f1e7d0; }
         body.theme-sepia .bg-gray-100 { background-color: #e6d7b8; }
@@ -90,7 +84,6 @@
             background-color: #e6d7b8;
             color: #433422;
         }
-
         /* Theme Blue */
         body.theme-blue .bg-white { background-color: #e8f4f8; }
         body.theme-blue .bg-gray-100 { background-color: #d9ebf3; }
@@ -109,7 +102,6 @@
             background-color: #d9ebf3;
             color: #2c5282;
         }
-
         /* Theme Green */
         body.theme-green .bg-white { background-color: #e8f8e8; }
         body.theme-green .bg-gray-100 { background-color: #d9f3d9; }
@@ -128,50 +120,63 @@
             background-color: #d9f3d9;
             color: #276749;
         }
-
+        /* Theme Red */
+        body.theme-red .bg-white { background-color: #f8e8e8; }
+        body.theme-red .bg-gray-100 { background-color: #f3d9d9; }
+        body.theme-red .text-gray-600 { color: #742a2a; }
+        body.theme-red .border { border-color: #e6b8b8; }
+        body.theme-red .drawer { background: #f8e8e8; }
+        body.theme-red select { 
+            background-color: #fff0f0;
+            border-color: #e6b8b8;
+        }
+        body.theme-red button.bg-black {
+            background-color: #742a2a;
+            color: #f8e8e8;
+        }
+        body.theme-red button.bg-gray-200 {
+            background-color: #f3d9d9;
+            color: #742a2a;
+        }
         /* Styles responsives */
         @media (max-width: 640px) {
             .max-w-2xl {
                 max-width: 100%;
                 padding: 0 1rem;
             }
-            
             .drawer {
                 width: 85%;
                 left: -85%;
             }
-            
             .drawer.open {
                 transform: translateX(100%);
             }
         }
-
         /* Modification des styles des thèmes pour le cadre en pointillé */
         /* Theme Normal */
         body.theme-normal .border-dashed {
             border-color: #f3f4f6; /* Couleur du header en mode normal */
         }
-
         /* Theme Night */
         body.theme-night .border-dashed {
             border-color: #2d2d2d; /* Couleur du header en mode nuit */
         }
-
         /* Theme Sepia */
         body.theme-sepia .border-dashed {
             border-color: #e6d7b8; /* Couleur du header en mode sépia */
         }
-
         /* Theme Blue */
         body.theme-blue .border-dashed {
             border-color: #d9ebf3; /* Couleur du header en mode bleu */
         }
-
         /* Theme Green */
         body.theme-green .border-dashed {
             border-color: #d9f3d9; /* Couleur du header en mode vert */
         }
-
+        /* Theme Red */
+        body.theme-red .border-dashed {
+            border-color: #f3d9d9; /* Couleur du header en mode rouge */
+        }
         /* Amélioration des styles responsives */
         @media (max-width: 1024px) {
             .max-w-2xl {
@@ -180,52 +185,57 @@
                 padding: 0 1rem;
             }
         }
-
         /* Ajustement de la taille minimale et maximale de la fenêtre */
         .main-container {
-            min-width: 320px;
+            min-width: 150px;
             max-width: 800px;
             margin: 0 auto;
             width: 100%;
         }
-
         /* Ajustement du conteneur principal */
         .content-wrapper {
+            position: absolute;
+            inset-x: 0;
+            top: -20px;
+            bottom: 0;
+            padding: 1rem;
             width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 0 1rem;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+            overflow: hidden;
         }
-
         /* Ajustement du cadre en pointillé */
         .dashed-container {
-            flex: 1;
+            height: calc(100% + 18px);
+            width: 100%;
+            max-width: 60rem;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            background-color: transparent;
             display: flex;
             flex-direction: column;
-            min-height: 0;
-            position: relative;
-            margin: 1rem 0;
+            padding: 0,5rem;
+            border-width: 2px;
+            border-style: dashed;
+            border-radius: 0.5rem;
+            overflow: hidden;
         }
-
         /* Modification des styles pour le conteneur de chapitres */
         .chapters-container {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-height: 0;
+            margin-top: 1rem;
             overflow: hidden;
         }
-
         /* Ajustement du scroll area */
         .scroll-area {
             flex: 1;
             overflow-y: auto;
             min-height: 0;
+            margin-top: 0.5rem;
+            border-radius: 0.375rem;
         }
-
         /* Ajout des styles pour les boutons */
         .file-select-button {
             width: 140px;  /* Largeur fixe */
@@ -239,7 +249,6 @@
             line-height: 1;
             padding: 0 0.75rem;
         }
-
         /* Style pour les boutons d'action (Analyser et Convertir) */
         .action-button {
             height: 32px;  /* Hauteur fixe */
@@ -251,7 +260,6 @@
             font-size: 0.875rem;
             line-height: 1;
         }
-
         /* Ajustement du conteneur de sélection */
         .selection-container {
             display: flex;
@@ -259,20 +267,17 @@
             gap: 0.75rem;
             flex-wrap: nowrap;  /* Empêche le retour à la ligne */
         }
-
         .status-container {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             overflow: hidden;  /* Cache le débordement du texte */
         }
-
         .status-icon {
             flex-shrink: 0;  /* Empêche l'icône de se réduire */
             width: 20px;     /* Largeur fixe */
             height: 20px;    /* Hauteur fixe */
         }
-
         .file-name {
             font-size: 0.75rem;
             color: #666;
@@ -280,7 +285,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
         .progress-counter {
             position: absolute;
             right: 1rem;
@@ -290,10 +294,581 @@
             font-weight: bold;
             z-index: 100;  /* S'assure que le compteur est au-dessus des autres éléments */
         }
-
         /* Ajoutons un style pour le header */
         header {
             position: relative;  /* Nécessaire pour le positionnement absolu du compteur */
+        }
+        /* Dans la section style, ajouter les styles pour les paramètres avancés */
+        #advancedSettings {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        #advancedSettings.hidden {
+            display: none;
+        }
+
+        /* Styles pour les boutons du header du tiroir */
+        .drawer .header-button {
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+
+        .drawer .header-button:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        body.theme-night .drawer .header-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Styles spécifiques pour le mode nuit */
+        body.theme-night #advancedSettings {
+            background-color: #1a1a1a;
+            color: white;
+        }
+
+        body.theme-night #advancedSettings header {
+            background-color: #2d2d2d;
+        }
+
+        /* Couleurs des points pour chaque thème */
+        body.theme-normal .dot-pattern {
+            background-image: radial-gradient(rgb(230, 230, 230) 2px, transparent 1px);
+        }
+        
+        body.theme-night .dot-pattern {
+            background-image: radial-gradient(rgb(55, 65, 81) 2px, transparent 1px);
+        }
+        
+        body.theme-sepia .dot-pattern {
+            background-image: radial-gradient(rgb(230, 215, 184) 2px, transparent 1px);
+        }
+        
+        body.theme-blue .dot-pattern {
+            background-image: radial-gradient(rgb(179, 212, 255) 2px, transparent 1px);
+        }
+        
+        body.theme-green .dot-pattern {
+            background-image: radial-gradient(rgb(170, 239, 195) 2px, transparent 1px);
+        }
+        
+        body.theme-red .dot-pattern {
+            background-image: radial-gradient(rgb(253, 181, 181) 2px, transparent 1px);
+        }
+
+        /* Style commun pour le motif de points */
+        .dot-pattern {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-size: 20px 20px;
+            background-position: 0 -10px;
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        /* Ajouter un style pour le conteneur principal */
+        .dashed-container {
+            position: relative;
+            z-index: 1;
+            background-color: transparent;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            height: 100%;
+        }
+
+        /* Ajouter des styles pour que le contenu soit au-dessus des points */
+        .content-layer {
+            position: relative;
+            z-index: 2;
+            background-color: transparent;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* Style pour la section des contrôles (fichiers et boutons) */
+        .controls-section {
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        /* Ajuster le conteneur des chapitres */
+        .chapters-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-height: 0;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        /* Ajuster la zone de défilement */
+        .scroll-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            min-height: 0;
+            margin-top: 0.5rem;
+            border-radius: 0.375rem;
+        }
+
+        /* Ajouter/modifier ces styles dans la section style */
+        main {
+            position: relative;  /* Pour le positionnement absolu de son enfant */
+            overflow: hidden;
+        }
+
+        .content-wrapper {
+            position: absolute;
+            inset-x: 0;
+            top: -20px;
+            bottom: 0;
+            padding: 1rem;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .dashed-container {
+            height: calc(100% + 20px);
+            width: 100%;
+            max-width: 42rem;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            background-color: transparent;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            border-width: 2px;
+            border-style: dashed;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        /* Ajuster les styles pour la responsivité */
+        @media (max-width: 768px) {
+            .content-wrapper {
+                padding: 0.75rem;
+            }
+
+            .dashed-container {
+                padding: 0.75rem;
+            }
+
+            /* Ajuster le texte des labels pour qu'il s'adapte */
+            .block.text-sm.font-medium {
+                font-size: 0.875rem;
+                white-space: normal;
+                line-height: 1.25;
+            }
+
+            /* Ajuster les boutons pour qu'ils s'adaptent */
+            .file-select-button {
+                min-width: 120px;
+                padding: 0 0.5rem;
+            }
+
+            .action-button {
+                min-width: 80px;
+                padding: 0 0.75rem;
+            }
+        }
+
+        /* Dans la section style, modifier/ajouter ces styles */
+        .file-select-button i {
+            width: 16px;  /* h-4 équivaut à 16px */
+            height: 16px;
+            margin-right: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .status-icon {
+            flex-shrink: 0;
+            width: 16px;     /* Uniformiser avec les autres icônes */
+            height: 16px;    /* Uniformiser avec les autres icônes */
+        }
+
+        /* Dans la section style */
+        [data-lucide] {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .file-select-button [data-lucide] {
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.5rem;
+        }
+
+        button [data-lucide] {
+            display: block;
+        }
+
+        /* Dans la section style */
+        .file-select-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .file-select-button i {
+            width: 16px;
+            height: 16px;
+        }
+
+        [data-lucide] {
+            width: 20px;
+            height: 20px;
+        }
+
+        .file-select-button [data-lucide] {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Supprimer les styles spécifiques à Lucide */
+        [data-lucide], .file-select-button i {
+            display: none;
+        }
+
+        /* Ajouter des styles spécifiques pour les SVG */
+        .file-select-button svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        /* Ajuster le style des boutons de fichier/dossier */
+        .file-select-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            height: 32px;
+            min-width: 150px;
+        }
+
+        /* Ajuster la taille des icônes de statut */
+        .status-container svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Supprimer les styles redondants et conflictuels */
+        [data-lucide], .file-select-button i {
+            display: none;
+        }
+
+        /* Styles des boutons de fichier/dossier */
+        .file-select-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            height: 36px;
+            min-width: 160px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background-color: black;
+            color: white;
+            border-radius: 0.375rem;
+        }
+
+        .file-select-button:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        /* Styles des icônes dans les boutons */
+        .file-select-button svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Styles du conteneur de statut */
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-left: 0.5rem;
+        }
+
+        .status-container svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Styles des boutons d'action */
+        .action-button {
+            height: 36px;
+            padding: 0 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.375rem;
+        }
+
+        /* Styles du nom de fichier */
+        .file-name {
+            font-size: 0.875rem;
+            color: #4B5563;
+        }
+
+        /* Ajustement de l'espacement des conteneurs */
+        .selection-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Styles responsifs */
+        @media (max-width: 640px) {
+            .file-select-button {
+                min-width: 140px;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .status-container {
+                padding-left: 0.25rem;
+            }
+        }
+
+        /* Styles des boutons principaux */
+        .file-select-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            height: 32px;
+            min-width: 160px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background-color: black;
+            color: white;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+
+        .file-select-button:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        /* Styles des icônes dans les boutons */
+        .file-select-button svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            margin-right: 2px;
+        }
+
+        /* Styles du conteneur de statut */
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 0.5rem;
+        }
+
+        .status-container svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Styles des boutons d'action */
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 32px;
+            padding: 0 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.375rem;
+        }
+
+        /* Styles du nom de fichier */
+        .file-name {
+            font-size: 0.875rem;
+            color: #4B5563;
+            margin-left: 0.25rem;
+        }
+
+        /* Ajustement de l'espacement des conteneurs */
+        .selection-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Styles des labels */
+        .block.text-sm.font-medium {
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Ajustement des marges et espacements */
+        .controls-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .controls-section > div {
+            margin-bottom: 1rem;
+        }
+
+        /* Styles responsifs */
+        @media (max-width: 640px) {
+            .file-select-button {
+                min-width: 160px;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .action-button {
+                padding: 0 1rem;
+            }
+        }
+
+        /* Styles des boutons principaux */
+        .file-select-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            height: 32px;
+            min-width: 160px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background-color: black;
+            color: white;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+
+        /* Styles des icônes dans les boutons */
+        .file-select-button svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            margin-right: 2px;
+        }
+
+        /* Styles du conteneur de statut */
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 0.5rem;
+        }
+
+        .status-container svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Styles des boutons d'action */
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 32px;
+            padding: 0 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.375rem;
+        }
+
+        /* Styles du nom de fichier */
+        .file-name {
+            font-size: 0.875rem;
+            color: #4B5563;
+            margin-left: 0.25rem;
+        }
+
+        /* Ajustement de l'espacement des conteneurs */
+        .selection-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Styles des labels */
+        .block.text-sm.font-medium {
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Ajustement des marges et espacements */
+        .controls-section > div {
+            margin-bottom: 1rem;
+        }
+
+        .controls-section .flex.flex-wrap.gap-3 {
+            gap: 0.5rem;
+        }
+
+        /* Ajustement du bouton Convertir */
+        .action-button.bg-gray-200 {
+            background-color: #E5E7EB;
+        }
+
+        /* Ajustement des croix rouges */
+        .status-container svg.text-red-500 {
+            color: #EF4444;
+        }
+
+        /* Styles des boutons principaux */
+        .file-select-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            height: 32px;
+            min-width: 160px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background-color: black;
+            color: white;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+
+        /* Ajuster la largeur du bouton de dossier */
+        .file-select-button[onclick="selectFolder()"] {
+            min-width: 170px;
+        }
+
+        /* Styles des icônes dans les boutons */
+        .file-select-button svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            margin-right: 4px;
+        }
+
+        /* Styles du conteneur de statut */
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 0.5rem;
+        }
+
+        .status-container svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -304,8 +879,24 @@
     <!-- Tiroir latéral -->
     <div id="drawer" class="drawer">
         <div class="flex flex-col h-full">
-            <div class="p-4 border-b">
+            <div class="p-4 border-b flex justify-between items-center">
+                <!-- Bouton des paramètres avancés -->
+                <button onclick="openAdvancedSettings()" class="p-2 hover:bg-gray-200 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <span class="sr-only">Paramètres avancés</span>
+                </button>
                 <h2 class="text-xl font-semibold">Paramètres</h2>
+                <!-- Bouton de fermeture -->
+                <button onclick="toggleDrawer()" class="p-2 hover:bg-gray-200 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    <span class="sr-only">Fermer</span>
+                </button>
             </div>
             
             <div class="flex-1 p-4 space-y-6">
@@ -327,9 +918,12 @@
                         <option value="">Choisir une voix</option>
                     </select>
                 </div>
-
                 <button onclick="testVoice()" class="w-full flex items-center justify-center px-4 py-2 bg-black text-white rounded-md hover:bg-black/90">
-                    <i data-lucide="volume-2" class="w-4 h-4 mr-2"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
                     Tester la voix
                 </button>
 
@@ -341,6 +935,7 @@
                         <option value="sepia">Sépia</option>
                         <option value="blue">Bleu clair</option>
                         <option value="green">Vert clair</option>
+                        <option value="red">Rouge clair</option>
                     </select>
                 </div>
             </div>
@@ -351,65 +946,152 @@
         </div>
     </div>
 
+    <div id="advancedSettings" class="fixed inset-0 bg-white z-50 hidden">
+        <header class="border-b flex-none bg-gray-100">
+            <div class="flex items-center justify-between h-14 px-4">
+                <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 mr-2">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <span class="font-semibold">Paramètres avancés</span>
+                </div>
+                <button onclick="closeAdvancedSettings()" class="hover:bg-gray-200 p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span class="sr-only">Fermer les paramètres avancés</span>
+                </button>
+            </div>
+        </header>
+        <main class="p-4">
+            <div class="max-w-2xl mx-auto space-y-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium">Nombre de chapitres simultanés</label>
+                    <select class="w-full p-2 border rounded-md" id="batchSize" onchange="saveBatchSettings()">
+                        <option value="1">1 chapitre</option>
+                        <option value="2">2 chapitres</option>
+                        <option value="3">3 chapitres</option>
+                        <option value="4">4 chapitres</option>
+                        <option value="5">5 chapitres</option>
+                        <option value="6">6 chapitres</option>
+                        <option value="7">7 chapitres</option>
+                        <option value="8">8 chapitres</option>
+                        <option value="9">9 chapitres</option>
+                        <option value="10">10 chapitres</option>
+                        <option value="11">11 chapitres</option>
+                        <option value="12">12 chapitres</option>
+                        <option value="13">13 chapitres</option>
+                        <option value="14">14 chapitres</option>
+                        <option value="15">15 chapitres</option>
+                        <option value="16">16 chapitres</option>
+                        <option value="17">17 chapitres</option>
+                        <option value="18">18 chapitres</option>
+                        <option value="19">19 chapitres</option>
+                        <option value="20">20 chapitres</option>
+                    </select>
+                    <p class="text-sm text-gray-500">Nombre de chapitres à convertir simultanément</p>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium">Nombre de tentatives en cas d'erreur</label>
+                    <select class="w-full p-2 border rounded-md" id="retryCount" onchange="saveBatchSettings()">
+                        <option value="10">10 tentatives (pause 0s)</option>
+                        <option value="20">20 tentatives (pause 30s)</option>
+                        <option value="30">30 tentatives (pause 1min)</option>
+                        <option value="40">40 tentatives (pause 1min30)</option>
+                        <option value="50">50 tentatives (pause 2min)</option>
+                    </select>
+                    <p class="text-sm text-gray-500">Nombre de tentatives et temps de pause entre les essais</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
     <div class="flex flex-col h-screen">
         <header class="border-b flex-none bg-gray-100">
             <div class="flex items-center h-14 px-4">
                 <button onclick="toggleDrawer()" class="mr-2 hover:bg-gray-200 p-2 rounded-lg">
-                    <i data-lucide="menu" class="h-5 w-5"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                        <line x1="4" y1="12" x2="20" y2="12"></line>
+                        <line x1="4" y1="6" x2="20" y2="6"></line>
+                        <line x1="4" y1="18" x2="20" y2="18"></line>
+                    </svg>
+                    <span class="sr-only">Menu</span>
                 </button>
                 <div class="flex items-center">
-                    <i data-lucide="book" class="h-6 w-6 mr-2"></i>
-                    <span class="font-semibold">ePub to Audio</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 mr-2 text-primary">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <span class="font-semibold">ePub to Audio v2</span>
                 </div>
             </div>
         </header>
 
         <main class="flex-1 overflow-hidden">
             <div class="content-wrapper">
-                <div class="dashed-container border-2 border-dashed rounded-lg p-4 space-y-4">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Sélectionner un fichier ePub/PDF</label>
-                            <div class="selection-container mt-1.5">
-                                <button onclick="selectFile()" class="file-select-button bg-black text-white rounded-md hover:bg-black/90">
-                                    <i data-lucide="folder-open" class="mr-2 h-4 w-4"></i>
-                                    Choisir un fichier
-                                </button>
-                                <div class="status-container">
-                                    <i id="fileIcon" data-lucide="x" class="status-icon text-red-500"></i>
-                                    <span id="selectedFile" class="file-name hidden"></span>
+                <div class="dashed-container border-2 border-dashed rounded-lg p-4">
+                    <!-- Le motif de points en arrière-plan -->
+                    <div class="dot-pattern"></div>
+                    
+                    <!-- Wrapper pour le contenu -->
+                    <div class="content-layer">
+                        <!-- Section des contrôles -->
+                        <div class="controls-section space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Sélectionner un fichier ePub/PDF</label>
+                                <div class="selection-container mt-1.5">
+                                    <button onclick="selectFile()" class="file-select-button">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+                                        </svg>
+                                        Choisir un fichier
+                                    </button>
+                                    <div class="status-container">
+                                        <svg id="fileIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-red-500">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                        <span id="selectedFile" class="file-name hidden"></span>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Sélectionner un dossier d'export</label>
+                                <div class="selection-container mt-1.5">
+                                    <button onclick="selectFolder()" class="file-select-button">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+                                        </svg>
+                                        Choisir un dossier
+                                    </button>
+                                    <div class="status-container">
+                                        <svg id="folderIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-red-500">
+                                            <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/>
+                                        </svg>
+                                        <span id="selectedFolder" class="file-name hidden"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="analyzeFile()" class="action-button bg-black text-white hover:bg-black/90">
+                                    Analyser
+                                </button>
+                                <button onclick="convertToAudio()" class="action-button bg-gray-200 text-black hover:bg-gray-300">
+                                    Convertir
+                                </button>
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Sélectionner un dossier d'export</label>
-                            <div class="selection-container mt-1.5">
-                                <button onclick="selectFolder()" class="file-select-button bg-black text-white rounded-md hover:bg-black/90">
-                                    <i data-lucide="folder-open" class="mr-2 h-4 w-4"></i>
-                                    Choisir un dossier
-                                </button>
-                                <div class="status-container">
-                                    <i id="folderIcon" data-lucide="x" class="status-icon text-red-500"></i>
-                                    <span id="selectedFolder" class="file-name hidden"></span>
-                                </div>
+                        <!-- Section des chapitres -->
+                        <div class="chapters-container">
+                            <h3 class="font-medium">Chapitres extraits</h3>
+                            <div class="scroll-area border rounded-md" id="chaptersContainer">
+                                <!-- Les chapitres seront insérés ici -->
                             </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-2">
-                            <button onclick="analyzeFile()" class="action-button bg-black text-white rounded-md hover:bg-black/90">
-                                Analyser
-                            </button>
-                            <button onclick="convertToAudio()" class="action-button bg-gray-200 text-black rounded-md hover:bg-gray-300">
-                                Convertir
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="chapters-container">
-                        <h3 class="font-medium mb-2">Chapitres extraits</h3>
-                        <div class="scroll-area border rounded-md" id="chaptersContainer">
-                            <!-- Les chapitres seront insérés ici -->
                         </div>
                     </div>
                 </div>
@@ -421,99 +1103,181 @@
         let currentFilePath = null;
         let currentFolderPath = null;
 
-        // Ajouter cette fonction utilitaire
-        function truncateFileName(fileName, maxLength = 40) {
-            if (fileName.length <= maxLength) return fileName;
+        // Définir les voix Edge (une seule fois ici)
+        const edgeVoices = {
+            'fr-FR-RemyNeural': 'Rémy Multilingue',
+            'fr-FR-VivienneNeural': 'Vivienne Multilingue',
+            'fr-FR-HenriNeural': 'Henri',
+            'fr-FR-DeniseNeural': 'Denise',
+            'fr-FR-EloiseNeural': 'Héloïse'
+        };
+
+        // Fonction pour détecter le système d'exploitation
+        function detectOS() {
+            console.log('Détection du système d\'exploitation...');
             
-            const extension = fileName.split('.').pop();
-            const nameWithoutExt = fileName.slice(0, -(extension.length + 1));
+            // Vérifier d'abord si nous sommes sur Android via l'API Python
+            if (window.pywebview && window.pywebview.api.is_android) {
+                console.log('Système détecté: Android');
+                return 'android';
+            }
             
-            const truncatedLength = maxLength - extension.length - 4; // -4 pour "..." et "."
-            const start = nameWithoutExt.slice(0, truncatedLength);
+            // Utiliser navigator.platform pour une détection plus précise
+            const platform = navigator.platform.toLowerCase();
+            console.log('Platform string:', platform);
             
-            return `${start}...${extension}`;
+            if (platform.includes('mac')) {
+                console.log('Système détecté: macOS');
+                return 'macos';
+            }
+            if (platform.includes('win')) {
+                console.log('Système détecté: Windows');
+                return 'windows';
+            }
+            if (platform.includes('linux')) {
+                console.log('Système détecté: Linux');
+                return 'linux';
+            }
+            
+            console.log('Système non reconnu, utilisation du mode par défaut');
+            return 'unknown';
         }
 
         // Fonction pour sélectionner un fichier
         async function selectFile() {
+            console.log('=== DÉBUT SÉLECTION FICHIER ===');
+            const os = detectOS();
+            console.log('OS détecté:', os);
+            
             try {
-                const result = await window.pywebview.api.select_file();
-                if (result.status === 'success') {
+                let result;
+                switch (os) {
+                    case 'android':
+                        console.log('Utilisation du sélecteur Android');
+                        result = await window.pywebview.api.select_file_android();
+                        break;
+                    case 'macos':
+                        console.log('Utilisation du sélecteur macOS');
+                        result = await window.pywebview.api.select_file({
+                            filters: [
+                                { name: 'Documents', extensions: ['epub', 'pdf'] }
+                            ],
+                            defaultPath: '~/Documents'
+                        });
+                        break;
+                    case 'windows':
+                        console.log('Utilisation du sélecteur Windows');
+                        result = await window.pywebview.api.select_file({
+                            filters: [
+                                { name: 'Documents', extensions: ['epub', 'pdf'] }
+                            ],
+                            defaultPath: '%USERPROFILE%\\Documents'
+                        });
+                        break;
+                    default:
+                        console.log('Utilisation du sélecteur par défaut');
+                        result = await window.pywebview.api.select_file();
+                }
+                
+                console.log('Résultat de la sélection:', result);
+
+                if (result && result.status === 'success' && result.path) {
                     currentFilePath = result.path;
-                    const truncatedName = truncateFileName(result.name);
                     const fileIcon = document.getElementById('fileIcon');
                     const selectedFile = document.getElementById('selectedFile');
-                    
-                    // Changer l'icône en coche verte
                     fileIcon.setAttribute('data-lucide', 'check');
                     fileIcon.classList.remove('text-red-500');
                     fileIcon.classList.add('text-green-500');
-                    
-                    // Afficher le nom du fichier
-                    selectedFile.textContent = truncatedName;
-                    selectedFile.title = result.name;
+                    selectedFile.textContent = result.name;
                     selectedFile.classList.remove('hidden');
-                    
-                    // Rafraîchir les icônes
                     lucide.createIcons();
-                } else {
-                    showError(result.message);
+                } else if (result && result.status === 'cancelled') {
+                    console.log('Sélection annulée par l\'utilisateur');
                 }
             } catch (error) {
-                showError('Erreur lors de la sélection du fichier');
+                console.error('Exception dans selectFile:', error);
             }
+            console.log('=== FIN SÉLECTION FICHIER ===');
         }
 
         // Fonction pour sélectionner un dossier
         async function selectFolder() {
+            console.log('=== DÉBUT SÉLECTION DOSSIER ===');
+            const os = detectOS();
+            console.log('OS détecté:', os);
+            
             try {
-                const result = await window.pywebview.api.select_folder();
-                if (result.status === 'success') {
+                let result;
+                switch (os) {
+                    case 'android':
+                        console.log('Utilisation du sélecteur de dossier Android');
+                        result = await window.pywebview.api.select_folder_android();
+                        break;
+                    case 'macos':
+                        console.log('Utilisation du sélecteur de dossier macOS');
+                        result = await window.pywebview.api.select_folder({
+                            defaultPath: '~/Documents'
+                        });
+                        break;
+                    case 'windows':
+                        console.log('Utilisation du sélecteur de dossier Windows');
+                        result = await window.pywebview.api.select_folder({
+                            defaultPath: '%USERPROFILE%\\Documents'
+                        });
+                        break;
+                    default:
+                        console.log('Utilisation du sélecteur de dossier par défaut');
+                        result = await window.pywebview.api.select_folder();
+                }
+                
+                console.log('Résultat de la sélection:', result);
+
+                if (result && result.status === 'success' && result.path) {
                     currentFolderPath = result.path;
-                    const truncatedName = truncateFileName(result.name);
                     const folderIcon = document.getElementById('folderIcon');
                     const selectedFolder = document.getElementById('selectedFolder');
-                    
-                    // Changer l'icône en coche verte
                     folderIcon.setAttribute('data-lucide', 'check');
                     folderIcon.classList.remove('text-red-500');
                     folderIcon.classList.add('text-green-500');
-                    
-                    // Afficher le nom du dossier
-                    selectedFolder.textContent = truncatedName;
-                    selectedFolder.title = result.name;
+                    selectedFolder.textContent = result.name;
                     selectedFolder.classList.remove('hidden');
-                    
-                    // Rafraîchir les icônes
                     lucide.createIcons();
-                } else {
-                    showError(result.message);
+                } else if (result && result.status === 'cancelled') {
+                    console.log('Sélection annulée par l\'utilisateur');
                 }
             } catch (error) {
-                showError('Erreur lors de la sélection du dossier');
+                console.error('Exception dans selectFolder:', error);
             }
+            console.log('=== FIN SÉLECTION DOSSIER ===');
         }
 
-        // Fonction pour analyser le fichier
         async function analyzeFile() {
+            console.log('Tentative d\'analyse avec le chemin:', currentFilePath);
+            
             if (!currentFilePath) {
+                console.error('Aucun fichier sélectionné');
                 showError('Veuillez sélectionner un fichier à analyser');
                 return;
             }
 
             try {
+                console.log('Envoi de la requête d\'analyse au backend');
                 const result = await window.pywebview.api.analyze_file(currentFilePath);
+                console.log('Résultat de l\'analyse:', result);
+                
                 if (result.status === 'success') {
+                    console.log('Analyse réussie, mise à jour de l\'UI');
                     updateChaptersUI(result.chapters);
                 } else {
+                    console.error('Erreur d\'analyse:', result.message);
                     showError(result.message);
                 }
             } catch (error) {
+                console.error('Exception lors de l\'analyse:', error);
                 showError('Erreur lors de l\'analyse du fichier');
             }
         }
 
-        // Fonction pour mettre à jour l'interface avec les chapitres
         function updateChaptersUI(chapters) {
             const container = document.getElementById('chaptersContainer');
             if (!chapters || chapters.length === 0) {
@@ -529,16 +1293,23 @@
             `).join('');
         }
 
-        // Fonction pour afficher les erreurs
         function showError(message) {
-            console.error('Erreur:', message);
-            // Vous pouvez implémenter une meilleure UI pour les erreurs
+            console.error('=== DÉBUT ERREUR ===');
+            console.error('Message:', message);
+            console.error('Stack trace:', new Error().stack);
+            console.error('=== FIN ERREUR ===');
+            
+            if (message === 'Erreur lors de la sélection du fichier' || 
+                message === 'Erreur lors de la sélection du dossier' ||
+                message === 'Aucun fichier sélectionné' ||
+                message === 'Aucun dossier sélectionné') {
+                console.log('Message d\'erreur ignoré:', message);
+                return;
+            }
+            
             alert(message);
         }
 
-        // Code JavaScript existant...
-
-        // Ajouter la fonction pour le tiroir
         function toggleDrawer() {
             const drawer = document.getElementById('drawer');
             const overlay = document.getElementById('drawerOverlay');
@@ -546,22 +1317,15 @@
             overlay.classList.toggle('open');
         }
 
-        // Initialiser les icônes Lucide
         lucide.createIcons();
 
-        // Fonction pour changer le thème
         function changeTheme(theme) {
             const body = document.body;
-            // Retirer toutes les classes de thème
-            body.classList.remove('theme-normal', 'theme-night', 'theme-sepia', 'theme-blue', 'theme-green');
-            // Ajouter la nouvelle classe de thème
+            body.classList.remove('theme-normal', 'theme-night', 'theme-sepia', 'theme-blue', 'theme-green', 'theme-red');
             body.classList.add(`theme-${theme}`);
-            
-            // Sauvegarder le thème dans le localStorage
             localStorage.setItem('theme', theme);
         }
 
-        // Charger le thème sauvegardé au démarrage
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme') || 'normal';
             const themeSelect = document.querySelector('select[onchange="changeTheme(this.value)"]');
@@ -571,28 +1335,16 @@
             changeTheme(savedTheme);
         });
 
-        // Dans la section script, modifions le mapping des voix
-        const edgeVoices = {
-            'fr-FR-RemyNeural': 'Rémy Multilingue',
-            'fr-FR-VivienneNeural': 'Vivienne Multilingue',
-            'fr-FR-HenriNeural': 'Henri',
-            'fr-FR-DeniseNeural': 'Denise',
-            'fr-FR-EloiseNeural': 'Héloïse'
-        };
-
         // Fonction pour changer le service TTS
         async function changeTTSService(service) {
             const voiceSelector = document.getElementById('voiceSelector');
             const voiceSelect = document.getElementById('ttsVoice');
             
-            // Vider les options actuelles
             voiceSelect.innerHTML = '<option value="">Choisir une voix</option>';
             
             if (service === 'edge') {
-                // Afficher le sélecteur de voix
                 voiceSelector.style.display = 'block';
                 
-                // Ajouter les voix Edge TTS
                 for (const [id, name] of Object.entries(edgeVoices)) {
                     const option = document.createElement('option');
                     option.value = id;
@@ -600,11 +1352,9 @@
                     voiceSelect.appendChild(option);
                 }
             } else if (service === 'google') {
-                // Afficher le sélecteur de voix
                 voiceSelector.style.display = 'block';
                 
                 try {
-                    // Récupérer les voix Android
                     const result = await window.pywebview.api.get_android_tts_voices();
                     if (result && result.length > 0) {
                         result.forEach(voice => {
@@ -623,11 +1373,9 @@
                     console.error('Erreur lors de la récupération des voix Android:', error);
                 }
             } else {
-                // Cacher le sélecteur de voix pour les autres services
                 voiceSelector.style.display = 'none';
             }
             
-            // Sauvegarder le choix
             localStorage.setItem('tts_service', service);
         }
 
@@ -656,17 +1404,14 @@
             }
         }
 
-        // Au chargement de la page, sélectionner automatiquement Google TTS sur Android
         document.addEventListener('DOMContentLoaded', async function() {
             if (!checkRequiredElements()) {
                 console.error('Certains éléments requis sont manquants');
                 return;
             }
 
-            // Initialiser les icônes
-            lucide.createIcons();
+            initializeIcons();
 
-            // Restaurer le thème
             const savedTheme = localStorage.getItem('theme') || 'normal';
             const themeSelect = document.querySelector('select[onchange="changeTheme(this.value)"]');
             if (themeSelect) {
@@ -674,7 +1419,6 @@
                 changeTheme(savedTheme);
             }
 
-            // Vérifier si on est sur Android
             try {
                 const isAndroid = await window.pywebview.api.is_android;
                 if (isAndroid) {
@@ -688,8 +1432,6 @@
                 console.error('Erreur lors de la vérification de la plateforme:', error);
             }
         });
-
-        // Reste du code JavaScript...
 
         async function convertToAudio() {
             if (!currentFilePath) {
@@ -713,10 +1455,8 @@
                 return;
             }
 
-            // Vérifier si le conteneur de chapitres est vide
             const chaptersContainer = document.getElementById('chaptersContainer');
             if (!chaptersContainer.children.length) {
-                // Si aucun chapitre n'est affiché, lancer l'analyse
                 try {
                     const analysisResult = await window.pywebview.api.analyze_file(currentFilePath);
                     if (analysisResult.status !== 'success') {
@@ -731,7 +1471,6 @@
             }
 
             try {
-                // Créer l'élément de progression s'il n'existe pas déjà
                 createProgressElement();
                 progressElement.textContent = '0%';
                 progressElement.style.display = 'block';
@@ -754,23 +1493,20 @@
             }
         }
 
-        // Ajouter la gestion de la progression
         let progressElement = null;
 
         function createProgressElement() {
             if (!progressElement) {
                 progressElement = document.createElement('div');
                 progressElement.className = 'progress-counter';
-                // Sélectionner spécifiquement le header
                 const header = document.querySelector('header');
                 if (header) {
-                    header.style.position = 'relative';  // Assure que le positionnement absolu fonctionne
+                    header.style.position = 'relative';
                     header.appendChild(progressElement);
                 }
             }
         }
 
-        // Écouteur pour la progression
         window.addEventListener('conversionProgress', function(e) {
             createProgressElement();
             const progress = e.detail;
@@ -785,7 +1521,6 @@
             }
         });
 
-        // Ajouter une fonction de vérification des éléments DOM
         function checkRequiredElements() {
             const requiredElements = [
                 'ttsService',
@@ -804,7 +1539,95 @@
             }
             return true;
         }
+
+        function openAdvancedSettings() {
+            const advancedSettings = document.getElementById('advancedSettings');
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('drawerOverlay');
+            
+            drawer.classList.remove('open');
+            overlay.classList.remove('open');
+            
+            advancedSettings.classList.remove('hidden');
+            
+            const currentTheme = localStorage.getItem('theme') || 'normal';
+            advancedSettings.classList.add(`theme-${currentTheme}`);
+        }
+
+        function closeAdvancedSettings() {
+            const advancedSettings = document.getElementById('advancedSettings');
+            advancedSettings.classList.add('hidden');
+        }
+
+        // Ajouter un gestionnaire d'événements global pour intercepter les erreurs
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.log('Erreur globale interceptée:', {
+                message: msg,
+                url: url,
+                line: lineNo,
+                column: columnNo,
+                error: error
+            });
+            return false;
+        };
+
+        // Intercepter les rejets de promesses non gérés
+        window.addEventListener('unhandledrejection', function(event) {
+            console.log('Promesse rejetée non gérée:', event.reason);
+        });
+
+        // Attendre que pywebview soit complètement initialisé
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si pywebview est disponible
+            if (!window.pywebview) {
+                console.error('pywebview n\'est pas disponible');
+                return;
+            }
+
+            // Vérifier si l'API est disponible
+            if (!window.pywebview.api) {
+                console.error('L\'API pywebview n\'est pas disponible');
+                return;
+            }
+
+            console.log('pywebview est correctement initialisé');
+        });
+
+        // Fonction pour sauvegarder les paramètres
+        function saveBatchSettings() {
+            const batchSize = document.getElementById('batchSize').value;
+            const retryCount = document.getElementById('retryCount').value;
+            
+            localStorage.setItem('batchSize', batchSize);
+            localStorage.setItem('retryCount', retryCount);
+            
+            // Informer le backend des nouveaux paramètres
+            window.pywebview.api.update_batch_settings({
+                batchSize: parseInt(batchSize),
+                retryCount: parseInt(retryCount)
+            });
+        }
+
+        // Fonction pour charger les paramètres sauvegardés
+        function loadBatchSettings() {
+            const batchSize = localStorage.getItem('batchSize') || '5';
+            const retryCount = localStorage.getItem('retryCount') || '20';
+            
+            document.getElementById('batchSize').value = batchSize;
+            document.getElementById('retryCount').value = retryCount;
+            
+            // Informer le backend des paramètres chargés
+            window.pywebview.api.update_batch_settings({
+                batchSize: parseInt(batchSize),
+                retryCount: parseInt(retryCount)
+            });
+        }
+
+        // Ajouter l'appel à loadBatchSettings dans le DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... code existant ...
+            loadBatchSettings();
+        });
     </script>
 </body>
-</html> 
 </html> 

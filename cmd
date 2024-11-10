@@ -1,3 +1,7 @@
+docker build -t android-dev . 
+docker run -it --name android-dev-container -v $(pwd):/home/developer/app android-dev
+docker exec -it android-dev-container /bin/bash
+
 
 brew install autoconf automake libtool pkg-config
 brew link libtool
@@ -14,7 +18,7 @@ pip install -U pip
 pip install -U buildozer
 pip install -U Cython==0.29.33
 time ( yes | buildozer android clean ) > logC.txt
-time ( yes | buildozer -v android debug ) >> logC.txt
+time ( yes | buildozer -v android debug ) >> logC.txt    # rappel : > pour écraser le fichier et >> pour ajouter au fichier  
 
 source ~/.zshrc
 rm -rf TTSenv
@@ -153,6 +157,7 @@ python -c "import Cython; print(Cython.__version__)"
 $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;31.0.0"
 yes | (buildozer android clean 2>&1) | tee logC.txt
 yes | (buildozer -v android debug 2>&1) | tee -a logC.txt
+
 
 
 deactivate

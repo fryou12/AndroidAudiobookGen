@@ -3,7 +3,7 @@
 log_level = 2
 
 # (int) Display warning if buildozer is run as root (0 = False, 1 = True)
-warn_on_root = 1
+warn_on_root = 0
 
 # (str) Path to build artifact storage, absolute or relative to spec file
 build_dir = ./.buildozer
@@ -33,10 +33,12 @@ version = 0.1.10
 # (list) Application requirements
 requirements = python3,\
     kivy==2.2.1,\
-    pyjnius
-
-# Environment variables
-os.environ['JAVA_HOME'] = '/Users/thomasfry/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home'
+    pyjnius,\
+    pillow==10.0.0,\
+    beautifulsoup4==4.12.2,\
+    PyPDF2==3.0.1,\
+    pdfminer.six==20221105,\
+    requests==2.31.0
 
 # Python specific
 python.version = 3.8
@@ -45,26 +47,28 @@ python.version = 3.8
 android.permissions = INTERNET
 android.minapi = 21
 android.ndk = 25b
-android.sdk = 31
+android.ndk_api = 21
 android.archs = arm64-v8a
-android.skip_update = False
-android.enable_androidx = True
-android.entrypoint = org.kivy.android.PythonActivity
-android.apptheme = @android:style/Theme.NoTitleBar
-android.copy_libs = 1
-android.gradle_dependencies = org.tensorflow:tensorflow-lite:+,androidx.webkit:webkit:1.4.0
-android.add_gradle_repositories = mavenCentral()
 
-# Python-for-Android options
-p4a.branch = develop
+# Build paths
+android.sdk_path = /home/developer/.buildozer/android/platform/android-sdk
+android.ndk_path = /home/developer/.buildozer/android/platform/android-ndk-r25b
+android.ant_path = /home/developer/.buildozer/android/platform/apache-ant-1.9.4
+
+# Python-for-android paths
+p4a.source_dir = /home/developer/.buildozer/android/platform/python-for-android
+p4a.local_recipes = %(source.dir)s/recipes
+p4a.hook = %(source.dir)s/p4a_hooks.py
 p4a.bootstrap = sdl2
-p4a.local_recipes = ./recipes
-p4a.no_patches = True
+
+# Debug
+android.logcat_filters = *:S python:D
+p4a.verbose = 2
 
 # Build options
-android.logcat_filters = *:S python:D
-android.meta_data = android.app.lib_name=epubtoaudio
-android.wakelock = True
+android.copy_libs = 1
+android.gradle_dependencies = org.tensorflow:tensorflow-lite:+
+android.add_gradle_repositories = mavenCentral()
 
 # Orientation
 orientation = portrait

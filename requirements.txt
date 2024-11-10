@@ -1,0 +1,26 @@
+# Dépendances de base
+Kivy==2.1.0
+
+# Interface utilisateur
+pywebview>=4.4.1
+
+# Traitement des documents
+beautifulsoup4>=4.12.2
+lxml>=4.9.3
+PyPDF2>=3.0.1
+pdfminer.six>=20221105
+
+# Utilitaires
+python-dateutil>=2.8.2
+requests>=2.31.0
+pillow>=10.0.0
+
+# Gestion des fichiers
+python-magic>=0.4.27
+
+# TTS et Audio
+edge-tts==6.1.9
+aiohttp>=3.8.0  # Version compatible avec edge-tts
+
+# Dépendances spécifiques à la plateforme
+PyObjC>=9.2; sys_platform == 'darwin'
