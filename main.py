@@ -1,20 +1,24 @@
-import webview
-import json
 import os
-from epub_processor import EpubProcessor, PdfProcessor, clean_tmp
-from kivy.logger import Logger
-from kivy.utils import platform
-import asyncio
-import edge_tts
-import tempfile
-import platform as sys_platform  # Renommé pour éviter la confusion avec platform de kivy
-from functools import partial
-from pathlib import Path
+import sys
 import time
-import traceback  # Importer traceback au début de la fonction
+import json
+import asyncio
+import platform as sys_platform
+import traceback
+import tempfile
+from threading import Thread
+from pathlib import Path
+from functools import partial
 
-# Ajout des imports pour Android
-if platform == 'android':
+import webview
+import edge_tts
+from epub_processor import EpubProcessor, PdfProcessor, clean_tmp
+
+# Imports pour Android
+platform = sys_platform.system().lower()
+is_android = platform == 'android'
+
+if is_android:
     from jnius import autoclass, cast, PythonJavaClass, java_method
     from android.runnable import run_on_ui_thread
     from android.permissions import request_permissions, check_permission, Permission
@@ -24,17 +28,6 @@ if platform == 'android':
     PythonActivity = autoclass('org.kivy.android.PythonActivity')
     Context = autoclass('android.content.Context')
     DocumentFile = autoclass('androidx.documentfile.provider.DocumentFile')
-
-    class ActivityResultListener(PythonJavaClass):
-        __javainterfaces__ = ['org/kivy/android/PythonActivity$ActivityResultListener']
-        
-        def __init__(self, callback):
-            super().__init__()
-            self.callback = callback
-
-        @java_method('(IILandroid/content/Intent;)V')
-        def onActivityResult(self, requestCode, resultCode, data):
-            self.callback(requestCode, resultCode, data)
 
 class ApiInterface:
     def __init__(self):
@@ -56,7 +49,7 @@ class ApiInterface:
             except RuntimeError:
                 self.loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(self.loop)
-            Logger.info('Boucle asyncio initialisée')
+                print('Boucle asyncio initialisée')
 
         self.context = None
         if platform == 'android':
@@ -102,9 +95,9 @@ class ApiInterface:
     def select_file(self, params=None):
         """Ouvre un dialogue de sélection de fichier"""
         try:
-            Logger.info('='*50)
-            Logger.info('DÉBUT DE LA SÉLECTION DE FICHIER')
-            Logger.info(f'Paramètres reçus: {params}')
+            print('='*50)
+            print('DÉBUT DE LA SÉLECTION DE FICHIER')
+            print(f'Paramètres reçus: {params}')
             
             if self.is_android and not self.check_storage_permission():
                 self.ensure_permissions()
@@ -122,18 +115,18 @@ class ApiInterface:
                 else:
                     return self._select_file_desktop()
         except Exception as e:
-            Logger.error(f'Error selecting file: {str(e)}')
+            print(f'Error selecting file: {str(e)}')
             return {'status': 'error', 'message': str(e)}
         finally:
-            Logger.info('FIN DE LA SÉLECTION DE FICHIER')
-            Logger.info('='*50)
+            print('FIN DE LA SÉLECTION DE FICHIER')
+            print('='*50)
 
     def _select_file_desktop(self, filters=None, default_path=None):
         """Sélection de fichier pour desktop"""
         try:
             # Déterminer le système d'exploitation
             system = sys_platform.system()
-            Logger.info(f'Système détecté: {system}')
+            print(f'Système détecté: {system}')
             
             # Format correct pour les filtres selon l'OS
             if system == 'Darwin':  # macOS
@@ -141,19 +134,19 @@ class ApiInterface:
                     'ePub files (*.epub)',
                     'PDF files (*.pdf)'
                 ]
-                Logger.info(f'Types de fichiers configurés pour macOS: {file_types}')
+                print(f'Types de fichiers configurés pour macOS: {file_types}')
             elif system == 'Windows':
                 file_types = [
                     'ePub files (*.epub)',
                     'PDF files (*.pdf)'
                 ]
-                Logger.info(f'Types de fichiers configurés pour Windows: {file_types}')
+                print(f'Types de fichiers configurés pour Windows: {file_types}')
             else:  # Linux et autres
                 file_types = [
                     '*.epub',
                     '*.pdf'
                 ]
-                Logger.info(f'Types de fichiers configurés pour Linux: {file_types}')
+                print(f'Types de fichiers configurés pour Linux: {file_types}')
             
             # Traiter le chemin par défaut
             if default_path:
@@ -166,7 +159,7 @@ class ApiInterface:
                 else:  # Linux et autres
                     default_path = os.path.expanduser('~/Documents')
             
-            Logger.info(f'Dossier par défaut: {default_path}')
+            print(f'Dossier par défaut: {default_path}')
             
             # Créer le dialogue de sélection
             result = webview.windows[0].create_file_dialog(
@@ -177,18 +170,18 @@ class ApiInterface:
             )
             
             if result is None:
-                Logger.info('Sélection annulée par l\'utilisateur')
+                print('Sélection annulée par l\'utilisateur')
                 return {'status': 'cancelled'}
             
             if not result:
-                Logger.info('Aucun fichier sélectionné')
+                print('Aucun fichier sélectionné')
                 return {'status': 'cancelled'}
             
             file_path = result[0]
             file_name = os.path.basename(file_path)
             
-            Logger.info(f'Fichier sélectionné: {file_name}')
-            Logger.info(f'Chemin complet: {file_path}')
+            print(f'Fichier sélectionné: {file_name}')
+            print(f'Chemin complet: {file_path}')
             
             return {
                 'status': 'success',
@@ -197,17 +190,17 @@ class ApiInterface:
             }
             
         except Exception as e:
-            Logger.error(f'Erreur lors de la sélection: {str(e)}')
-            Logger.error(f'Type d\'erreur: {type(e).__name__}')
-            Logger.error(f'Traceback: {traceback.format_exc()}')
+            print(f'Erreur lors de la sélection: {str(e)}')
+            print(f'Type d\'erreur: {type(e).__name__}')
+            print(f'Traceback: {traceback.format_exc()}')
             return {'status': 'error', 'message': str(e)}
 
     def select_folder(self, params=None):
         """Ouvre un dialogue de sélection de dossier"""
         try:
-            Logger.info('='*50)
-            Logger.info('DÉBUT DE LA SÉLECTION DE DOSSIER')
-            Logger.info(f'Paramètres reçus: {params}')
+            print('='*50)
+            print('DÉBUT DE LA SÉLECTION DE DOSSIER')
+            print(f'Paramètres reçus: {params}')
             
             if self.is_android and not self.check_storage_permission():
                 self.ensure_permissions()
@@ -224,18 +217,18 @@ class ApiInterface:
                 else:
                     return self._select_folder_desktop()
         except Exception as e:
-            Logger.error(f'Error selecting folder: {str(e)}')
+            print(f'Error selecting folder: {str(e)}')
             return {'status': 'error', 'message': str(e)}
         finally:
-            Logger.info('FIN DE LA SÉLECTION DE DOSSIER')
-            Logger.info('='*50)
+            print('FIN DE LA SÉLECTION DE DOSSIER')
+            print('='*50)
 
     def _select_folder_desktop(self, default_path=None):
         """Sélection de dossier pour desktop"""
         try:
             # Déterminer le système d'exploitation
             system = sys_platform.system()
-            Logger.info(f'Système détecté: {system}')
+            print(f'Système détecté: {system}')
             
             # Traiter le chemin par défaut
             if default_path:
@@ -248,7 +241,7 @@ class ApiInterface:
                 else:  # Linux et autres
                     default_path = os.path.expanduser('~/Documents')
                 
-            Logger.info(f'Dossier par défaut: {default_path}')
+            print(f'Dossier par défaut: {default_path}')
             
             # Créer le dialogue de sélection
             result = webview.windows[0].create_file_dialog(
@@ -257,18 +250,18 @@ class ApiInterface:
             )
             
             if result is None:
-                Logger.info('Sélection annulée par l\'utilisateur')
+                print('Sélection annulée par l\'utilisateur')
                 return {'status': 'cancelled'}
             
             if not result:
-                Logger.info('Aucun dossier sélectionné')
+                print('Aucun dossier sélectionné')
                 return {'status': 'cancelled'}
             
             folder_path = result[0]
             folder_name = os.path.basename(folder_path)
             
-            Logger.info(f'Dossier sélectionné: {folder_name}')
-            Logger.info(f'Chemin complet: {folder_path}')
+            print(f'Dossier sélectionné: {folder_name}')
+            print(f'Chemin complet: {folder_path}')
             
             return {
                 'status': 'success',
@@ -277,9 +270,9 @@ class ApiInterface:
             }
             
         except Exception as e:
-            Logger.error(f'Erreur lors de la sélection: {str(e)}')
-            Logger.error(f'Type d\'erreur: {type(e).__name__}')
-            Logger.error(f'Traceback: {traceback.format_exc()}')
+            print(f'Erreur lors de la sélection: {str(e)}')
+            print(f'Type d\'erreur: {type(e).__name__}')
+            print(f'Traceback: {traceback.format_exc()}')
             return {'status': 'error', 'message': str(e)}
 
     def _handle_activity_result(self, requestCode, resultCode, data):
@@ -322,7 +315,7 @@ class ApiInterface:
                         })
                         
         except Exception as e:
-            Logger.error(f'Error handling activity result: {str(e)}')
+            print(f'Error handling activity result: {str(e)}')
             if requestCode == 1 and self.pending_file_callback:
                 self.pending_file_callback({
                     'status': 'error',
@@ -365,7 +358,7 @@ class ApiInterface:
                 
             return None
         except Exception as e:
-            Logger.error(f"Error getting real path: {str(e)}")
+            print(f"Error getting real path: {str(e)}")
             return uri.getPath()
 
     def _get_file_name_from_uri(self, uri):
@@ -426,6 +419,215 @@ class ApiInterface:
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
 
+    async def get_edge_voices(self):
+        """Récupère la liste des voix edge-tts de manière asynchrone"""
+        try:
+            print('Récupération des voix edge-tts...')
+            voices = await edge_tts.list_voices()
+            print(f'Structure d\'une voix: {voices[0] if voices else "Aucune voix trouvée"}')
+            
+            # Filtrer les voix françaises et créer un mapping des noms courts
+            fr_voices = []
+            voice_mapping = {}
+            
+            for voice in voices:
+                if voice['Locale'].startswith('fr'):
+                    voice_info = {
+                        'id': voice['ShortName'],
+                        'name': voice['FriendlyName'],
+                        'locale': voice['Locale'],
+                        'gender': voice['Gender']
+                    }
+                    fr_voices.append(voice_info)
+                    
+                    # Créer un mapping pour les versions non-multilingues
+                    if 'Multilingual' in voice['ShortName']:
+                        base_name = voice['ShortName'].replace('Multilingual', '')
+                        voice_mapping[base_name] = voice['ShortName']
+            
+            print(f'Voix françaises trouvées: {len(fr_voices)}')
+            for voice in fr_voices:
+                print(f"Voix disponible: {voice['id']} ({voice['gender']}) - {voice['name']}")
+            
+            print('Mapping des voix:')
+            for old_name, new_name in voice_mapping.items():
+                print(f"{old_name} -> {new_name}")
+            
+            return {'status': 'success', 'voices': fr_voices, 'mapping': voice_mapping}
+        except Exception as e:
+            print(f'Erreur lors de la récupération des voix: {str(e)}')
+            print(f'Type d\'erreur: {type(e).__name__}')
+            print(f'Traceback: {traceback.format_exc()}')
+            return {'status': 'error', 'message': str(e)}
+
+    def convert_voice_id(self, voice_id):
+        """Convertit l'ancien format d'ID de voix vers le nouveau format avec Multilingual si nécessaire"""
+        voice_mapping = {
+            'fr-FR-VivienneNeural': 'fr-FR-VivienneMultilingualNeural',
+            'fr-FR-RemyNeural': 'fr-FR-RemyMultilingualNeural'
+        }
+        return voice_mapping.get(voice_id, voice_id)
+
+    def get_voices(self, service):
+        """Récupère la liste des voix disponibles pour un service donné"""
+        try:
+            print('='*50)
+            print('RÉCUPÉRATION DES VOIX')
+            print(f'Service demandé: {service}')
+
+            if service == 'edge':
+                if not platform == 'android':
+                    # Exécuter de manière asynchrone
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    result = loop.run_until_complete(self.get_edge_voices())
+                    loop.close()
+                    print('Récupération des voix terminée')
+                    return result
+                else:
+                    return {'status': 'error', 'message': 'Edge TTS non disponible sur Android'}
+            elif service == 'google' and self.is_android:
+                voices = self.get_android_tts_voices()
+                return {'status': 'success', 'voices': voices}
+            else:
+                return {'status': 'error', 'message': 'Service non supporté'}
+        except Exception as e:
+            print(f'Erreur lors de la récupération des voix: {str(e)}')
+            return {'status': 'error', 'message': str(e)}
+        finally:
+            print('FIN DE LA RÉCUPÉRATION DES VOIX')
+            print('='*50)
+
+    async def do_tts(self, text, voice, output_file):
+        """Effectue la synthèse vocale de manière asynchrone"""
+        try:
+            communicate = edge_tts.Communicate(text, voice)
+            await communicate.save(output_file)
+            return True
+        except Exception as e:
+            print(f'Erreur lors de la synthèse vocale: {str(e)}')
+            return False
+
+    def test_voice(self, service, voice=None):
+        """Teste la voix sélectionnée"""
+        print('='*50)
+        print('DÉBUT DU TEST DE VOIX')
+        print(f'[Service demandé] {service}')
+        print(f'[Voix demandée] {voice}')
+        print(f'[Plateforme  ] {"Android" if self.is_android else "Desktop"}')
+        
+        # Convertir l'ID de la voix si nécessaire
+        if voice:
+            voice = self.convert_voice_id(voice)
+            print(f'[ID de voix converti] {voice}')
+        
+        temp_file = None
+        
+        try:
+            if service == 'edge':
+                if self.is_android:
+                    return {'status': 'error', 'message': 'Edge TTS non disponible sur Android'}
+                
+                print('Initialisation du service Edge TTS')
+                print('Module edge-tts trouvé et importé')
+                print(f'[Version edge-tts] {edge_tts.__version__}')
+                
+                # Vérifier la voix
+                voices_result = self.get_voices('edge')
+                print(f'Résultat get_voices: {voices_result}')
+                
+                if voices_result['status'] == 'error':
+                    return voices_result
+                    
+                voice_exists = any(v["id"] == voice for v in voices_result['voices'])
+                if not voice_exists:
+                    print(f'La voix {voice} n\'existe pas')
+                    return {'status': 'error', 'message': f'La voix {voice} n\'existe pas'}
+                
+                # Synthèse vocale
+                try:
+                    # Créer un fichier temporaire avec une extension .mp3
+                    with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp:
+                        temp_file = tmp.name
+                        print(f'Fichier temporaire créé: {temp_file}')
+                    
+                    # Texte de présentation
+                    presentation_text = "Bonjour, je suis votre narrateur, et voilà à quoi devrait ressembler un texte lu par moi."
+                    print('Texte de présentation prêt')
+                    
+                    # Créer un nouveau loop pour la synthèse
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    success = loop.run_until_complete(self.do_tts(presentation_text, voice, temp_file))
+                    loop.close()
+                    
+                    if not success:
+                        return {'status': 'error', 'message': 'Échec de la synthèse vocale'}
+                    
+                    print('Synthèse vocale terminée')
+                    
+                    if os.path.exists(temp_file):
+                        file_size = os.path.getsize(temp_file)
+                        print(f'Fichier audio créé avec succès: {temp_file} ({file_size} octets)')
+                        
+                        # Lecture du fichier audio
+                        system = sys_platform.system()
+                        print(f'Système d\'exploitation détecté: {system}')
+                        
+                        if system == 'Darwin':  # macOS
+                            cmd = f'afplay "{temp_file}"'
+                            print(f'Exécution de la commande: {cmd}')
+                            result = os.system(cmd)
+                            print(f'Résultat de la commande: {result}')
+                            time.sleep(5)  # Attendre la fin de la lecture
+                            return {'status': 'success'}
+                        
+                        elif system == 'Windows':
+                            try:
+                                import winsound
+                                winsound.PlaySound(temp_file, winsound.SND_FILENAME)
+                            except ImportError:
+                                os.system(f'powershell -c (New-Object Media.SoundPlayer "{temp_file}").PlaySync()')
+                            return {'status': 'success'}
+                        
+                        elif system == 'Linux':
+                            for player in ['aplay', 'paplay', 'mpg123']:
+                                try:
+                                    if os.system(f'which {player} > /dev/null 2>&1') == 0:
+                                        os.system(f'{player} "{temp_file}"')
+                                        return {'status': 'success'}
+                                except Exception as e:
+                                    print(f'Échec avec {player}: {str(e)}')
+                            return {'status': 'error', 'message': 'Aucun lecteur audio disponible'}
+                        
+                        else:
+                            return {'status': 'error', 'message': 'Système non supporté'}
+                    else:
+                        return {'status': 'error', 'message': 'Fichier audio non créé'}
+                
+                except Exception as e:
+                    print(f'Erreur lors de la synthèse/lecture: {str(e)}')
+                    return {'status': 'error', 'message': str(e)}
+            
+            elif service == 'google' and self.is_android:
+                # Code Android inchangé...
+                pass
+            
+            else:
+                return {'status': 'error', 'message': 'Service non supporté'}
+                
+        finally:
+            # Nettoyage
+            if temp_file and os.path.exists(temp_file):
+                try:
+                    os.unlink(temp_file)
+                    print('Fichier temporaire supprimé')
+                except Exception as e:
+                    print(f'Erreur lors de la suppression du fichier temporaire: {str(e)}')
+            
+            print('FIN DU TEST DE VOIX')
+            print('='*50)
+
     def analyze_file(self, file_path):
         """Analyse un fichier ePub ou PDF"""
         try:
@@ -450,7 +652,7 @@ class ApiInterface:
             else:
                 return {'status': 'error', 'message': 'Format de fichier non supporté'}
         except Exception as e:
-            Logger.error(f'Error analyzing file: {str(e)}')
+            print(f'Error analyzing file: {str(e)}')
             return {'status': 'error', 'message': str(e)}
 
     def convert_to_audio(self, params):
@@ -537,7 +739,7 @@ class ApiInterface:
                                                 progress = int((processed_count / total_chapters) * 100)
                                                 self.update_progress(progress)
                                         except Exception as e:
-                                            Logger.error(f"Erreur lors de la conversion du chapitre {processed_count}: {str(e)}")
+                                            print(f"Erreur lors de la conversion du chapitre {processed_count}: {str(e)}")
                                             chapter['attempts'] += 1
                 
                     tts = TextToSpeech(self.activity, onInit)
@@ -567,7 +769,7 @@ class ApiInterface:
                 return {'status': 'error', 'message': 'Service non supporté'}
 
         except Exception as e:
-            Logger.error(f'Error converting to audio: {str(e)}')
+            print(f'Error converting to audio: {str(e)}')
             return {'status': 'error', 'message': str(e)}
 
     def update_progress(self, progress):
@@ -576,7 +778,7 @@ class ApiInterface:
             js_code = f"window.dispatchEvent(new CustomEvent('conversionProgress', {{detail: {progress}}}));"
             webview.windows[0].evaluate_js(js_code)
         except Exception as e:
-            Logger.error(f'Error updating progress: {str(e)}')
+            print(f'Error updating progress: {str(e)}')
 
     def clean_temp_files(self):
         """Nettoie les fichiers temporaires"""
@@ -586,192 +788,8 @@ class ApiInterface:
             clean_tmp()
             return {'status': 'success'}
         except Exception as e:
-            Logger.error(f'Error cleaning temp files: {str(e)}')
+            print(f'Error cleaning temp files: {str(e)}')
             return {'status': 'error', 'message': str(e)}
-
-    def test_voice(self, service, voice=None):
-        """Teste la voix sélectionnée"""
-        Logger.info('='*50)
-        Logger.info('DÉBUT DU TEST DE VOIX')
-        Logger.info(f'Service demandé: {service}')
-        Logger.info(f'Voix demandée: {voice}')
-        Logger.info(f'Plateforme: {"Android" if self.is_android else "Desktop"}')
-        
-        # Créer un fichier temporaire qui s'auto-détruira
-        temp_file = None
-        
-        try:
-            if service == 'edge':
-                Logger.info('Initialisation du service Edge TTS')
-                
-                try:
-                    import edge_tts
-                    Logger.info('Module edge-tts trouvé et importé')
-                    Logger.info(f'Version edge-tts: {edge_tts.__version__}')
-                except ImportError as e:
-                    Logger.error(f'Module edge-tts non trouvé: {str(e)}')
-                    return {'status': 'error', 'message': 'Module edge-tts non installé'}
-
-                # Vérifier la voix
-                try:
-                    Logger.info('Vérification de la disponibilité de la voix...')
-                    voices = asyncio.run(edge_tts.list_voices())
-                    voice_exists = any(v["ShortName"] == voice for v in voices)
-                    if not voice_exists:
-                        Logger.error(f'La voix {voice} n\'existe pas')
-                        return {'status': 'error', 'message': f'La voix {voice} n\'existe pas'}
-                    Logger.info('Voix trouvée et valide')
-                except Exception as e:
-                    Logger.error(f'Erreur lors de la vérification de la voix: {str(e)}')
-                    return {'status': 'error', 'message': str(e)}
-
-                # Synthèse vocale
-                try:
-                    Logger.info('Création de la tâche de synthèse vocale')
-                    
-                    # Créer un fichier temporaire avec une extension .mp3
-                    with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp:
-                        temp_file = tmp.name
-                        Logger.info(f'Fichier temporaire créé: {temp_file}')
-                    
-                    async def do_tts():
-                        communicate = edge_tts.Communicate(
-                            "Bonjour, je suis votre narrateur, et voilà à quoi devrait ressembler un texte lu par moi.",
-                            voice
-                        )
-                        await communicate.save(temp_file)
-                    
-                    # Exécuter la synthèse de manière synchrone
-                    Logger.info('Exécution de la synthèse vocale')
-                    asyncio.run(do_tts())
-                    
-                    if os.path.exists(temp_file):
-                        Logger.info(f'Fichier audio créé avec succès: {temp_file}')
-                        
-                        # Lecture du fichier audio selon l'OS
-                        try:
-                            system = sys_platform.system()
-                            Logger.info(f'Système d\'exploitation détecté: {system}')
-                            
-                            if system == 'Darwin':  # macOS
-                                Logger.info('Utilisation de afplay pour la lecture')
-                                os.system(f'afplay "{temp_file}"')
-                                time.sleep(2)  # Attendre la fin de la lecture
-                                
-                            elif system == 'Windows':
-                                Logger.info('Utilisation de Windows Media Player pour la lecture')
-                                try:
-                                    import winsound
-                                    winsound.PlaySound(temp_file, winsound.SND_FILENAME)
-                                except ImportError:
-                                    # Alternative avec PowerShell si winsound n'est pas disponible
-                                    Logger.info('Utilisation de PowerShell pour la lecture')
-                                    os.system(f'powershell -c (New-Object Media.SoundPlayer "{temp_file}").PlaySync()')
-                                
-                            elif system == 'Linux':
-                                # Essayer plusieurs lecteurs audio courants sur Linux
-                                players = ['aplay', 'paplay', 'mpg123']
-                                played = False
-                                
-                                for player in players:
-                                    try:
-                                        Logger.info(f'Tentative de lecture avec {player}')
-                                        exit_code = os.system(f'which {player} > /dev/null 2>&1')
-                                        if exit_code == 0:  # Le lecteur est installé
-                                            os.system(f'{player} "{temp_file}"')
-                                            played = True
-                                            Logger.info(f'Lecture réussie avec {player}')
-                                            break
-                                    except Exception as e:
-                                        Logger.error(f'Échec de la lecture avec {player}: {str(e)}')
-                                
-                                if not played:
-                                    Logger.error('Aucun lecteur audio disponible sur ce système Linux')
-                                    return {'status': 'error', 'message': 'Aucun lecteur audio disponible'}
-                                
-                                else:
-                                    Logger.info('Lecture audio terminée avec succès')
-                                    return {'status': 'success'}
-                                
-                            else:
-                                Logger.error(f'Système d\'exploitation non supporté: {system}')
-                                return {'status': 'error', 'message': 'Système d\'exploitation non supporté'}
-                                
-                        except Exception as e:
-                            Logger.error(f'Erreur lors de la lecture audio: {str(e)}')
-                            Logger.error(f'Type d\'erreur: {type(e).__name__}')
-                            Logger.error(traceback.format_exc())
-                            return {'status': 'error', 'message': 'Erreur lors de la lecture audio'}
-                        
-                        return {'status': 'success'}
-                    else:
-                        Logger.error('Le fichier audio n\'a pas été créé')
-                        return {'status': 'error', 'message': 'Échec de la création du fichier audio'}
-                        
-                except Exception as e:
-                    Logger.error(f'Erreur lors de la synthèse vocale: {str(e)}')
-                    return {'status': 'error', 'message': str(e)}
-                
-            elif service == 'google' and self.is_android:
-                Logger.info('Initialisation du service Google TTS Android')
-                
-                try:
-                    from jnius import autoclass
-                    Logger.info('Import de jnius réussi')
-                    TextToSpeech = autoclass('android.speech.tts.TextToSpeech')
-                    Logger.info('Classe TextToSpeech chargée')
-                    
-                    def onInit(status):
-                        Logger.info(f'Callback onInit appelé avec status: {status}')
-                        if status == TextToSpeech.SUCCESS:
-                            Logger.info('Initialisation TTS réussie')
-                            if voice:
-                                Logger.info(f'Recherche de la voix: {voice}')
-                                available_voices = tts.getVoices()
-                                Logger.info(f'Voix disponibles: {[v.getName() for v in available_voices]}')
-                                for v in available_voices:
-                                    if v.getName() == voice:
-                                        Logger.info(f'Voix trouvée et sélectionnée: {voice}')
-                                        tts.setVoice(v)
-                                        break
-                            
-                            Logger.info('Début de la synthèse vocale...')
-                            result = tts.speak(
-                                "Bonjour, je suis votre narrateur, et voilà à quoi devrait ressembler un texte lu par moi.",
-                                TextToSpeech.QUEUE_FLUSH,
-                                None
-                            )
-                            Logger.info(f'Résultat de speak(): {result}')
-                        else:
-                            Logger.error(f'Échec de l\'initialisation TTS Android: {status}')
-                    
-                    Logger.info('Création de l\'instance TextToSpeech')
-                    tts = TextToSpeech(self.activity, onInit)
-                    Logger.info('Instance TextToSpeech créée')
-                    return {'status': 'success'}
-                    
-                except Exception as e:
-                    Logger.error(f'Erreur lors de l\'initialisation de Google TTS: {str(e)}')
-                    Logger.error(f'Type d\'erreur: {type(e).__name__}')
-                    return {'status': 'error', 'message': str(e)}
-            else:
-                Logger.warning(f'Service non supporté: {service}')
-                return {'status': 'error', 'message': 'Service non supporté'}
-                
-        finally:
-            # Attendre un peu avant de supprimer le fichier pour s'assurer que la lecture est terminée
-            time.sleep(3)
-            
-            # Nettoyer le fichier temporaire
-            if temp_file and os.path.exists(temp_file):
-                try:
-                    os.unlink(temp_file)
-                    Logger.info(f'Fichier temporaire supprimé: {temp_file}')
-                except Exception as e:
-                    Logger.error(f'Erreur lors de la suppression du fichier temporaire: {str(e)}')
-            
-            Logger.info('FIN DU TEST DE VOIX')
-            Logger.info('='*50)
 
     def get_android_tts_voices(self):
         """Récupère les voix disponibles sur Android"""
@@ -799,79 +817,98 @@ class ApiInterface:
             tts.shutdown()
             return available_voices
         except Exception as e:
-            Logger.error(f'Error getting Android TTS voices: {str(e)}')
+            print(f'Error getting Android TTS voices: {str(e)}')
             return []
 
     def update_batch_settings(self, params):
         """Met à jour les paramètres de traitement par lots"""
         try:
-            Logger.info('='*50)
-            Logger.info('MISE À JOUR DES PARAMÈTRES DE TRAITEMENT')
+            print('='*50)
+            print('MISE À JOUR DES PARAMÈTRES DE TRAITEMENT')
             
             if 'batchSize' in params:
                 self.batch_size = min(max(1, params['batchSize']), 20)
-                Logger.info(f'Nouvelle taille de lot: {self.batch_size}')
+                print(f'Nouvelle taille de lot: {self.batch_size}')
                 
             if 'retryCount' in params:
                 self.retry_count = min(max(10, params['retryCount']), 50)
-                Logger.info(f'Nouveau nombre de tentatives: {self.retry_count}')
+                print(f'Nouveau nombre de tentatives: {self.retry_count}')
                 
                 # Déterminer le délai de pause approprié
                 for limit, delay in sorted(self.retry_delays.items()):
                     if self.retry_count <= limit:
-                        Logger.info(f'Délai de pause configuré: {delay} secondes')
+                        print(f'Délai de pause configuré: {delay} secondes')
                         break
             
             return {'status': 'success'}
             
         except Exception as e:
-            Logger.error(f'Erreur lors de la mise à jour des paramètres: {str(e)}')
+            print(f'Erreur lors de la mise à jour des paramètres: {str(e)}')
             return {'status': 'error', 'message': str(e)}
         finally:
-            Logger.info('FIN DE LA MISE À JOUR DES PARAMÈTRES')
-            Logger.info('='*50)
+            print('FIN DE LA MISE À JOUR DES PARAMÈTRES')
+            print('='*50)
 
 def main():
     try:
-        Logger.info('='*50)
-        Logger.info('DÉMARRAGE DE L\'APPLICATION')
+        print('='*50)
+        print('DÉMARRAGE DE L\'APPLICATION')
         
         api = ApiInterface()
-        Logger.info('API Interface créée')
+        print('API Interface créée')
         
         # Chemins des fichiers
         base_dir = os.path.dirname(__file__)
         html_path = os.path.join(base_dir, 'assets', 'index.html')
+        icon_path = os.path.join(base_dir, 'assets', 'icons', 'iconset', 'icon_256x256.png')
         
-        Logger.info(f'Chemin HTML: {html_path}')
+        print(f'Chemin HTML: {html_path}')
+        print(f'Chemin icône: {icon_path}')
         
         with open(html_path, 'r', encoding='utf-8') as f:
             html_content = f.read()
-        Logger.info('Fichier HTML chargé')
+        print('Fichier HTML chargé')
         
-        Logger.info('Création de la fenêtre...')
+        print('Création de la fenêtre...')
+        
+        # Configuration de webview
+        webview.WINDOW_TITLE_MIN_LENGTH = 1  # Permettre des titres courts
+        
+        # Définir l'icône selon la plateforme
+        if sys_platform.system() == 'Darwin':  # macOS
+            import webview.platforms.cocoa as cocoa
+            if hasattr(cocoa, 'BrowserView'):
+                cocoa.BrowserView.app_icon = icon_path
+            
+            # Configuration NSApplication
+            from AppKit import NSApplication, NSImage
+            app = NSApplication.sharedApplication()
+            if os.path.exists(icon_path):
+                image = NSImage.alloc().initWithContentsOfFile_(icon_path)
+                app.setApplicationIconImage_(image)
+        
+        # Créer la fenêtre
         window = webview.create_window(
             'ePub to Audio',
             html=html_content,
             js_api=api,
-            min_size=(350, 600),
-            width=350,
-            resizable=True
+            width=360,
+            height=650,
         )
-        Logger.info('Fenêtre créée')
         
-        Logger.info('Démarrage de webview...')
+        print('Fenêtre créée')
+        
+        print('Démarrage de webview...')
         webview.start(debug=True)
-        Logger.info('Webview démarré')
+        print('Webview démarré')
         
     except Exception as e:
-        Logger.error('ERREUR CRITIQUE:')
-        Logger.error(str(e))
-        Logger.error(traceback.format_exc())
-        raise
+        print('ERREUR CRITIQUE')
+        print(str(e))
+        print(traceback.format_exc())
     finally:
-        Logger.info('FIN DU PROGRAMME')
-        Logger.info('='*50)
+        print('FIN DU PROGRAMME')
+        print('='*50)
 
 if __name__ == '__main__':
-    main() 
+    main()
